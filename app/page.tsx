@@ -4,11 +4,6 @@ import { useState, useEffect } from "react";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
 import "./../app/app.css";
-import { Amplify } from "aws-amplify";
-import outputs from "@/amplify_outputs.json";
-import "@aws-amplify/ui-react/styles.css";
-
-Amplify.configure(outputs);
 
 const client = generateClient<Schema>();
 
@@ -26,27 +21,89 @@ export default function App() {
   }, []);
 
   function createTodo() {
-    client.models.Todo.create({
-      content: window.prompt("Todo content"),
-    });
+    const content = window.prompt("What subscription or service do you want to cancel?");
+    if (content) {
+      client.models.Todo.create({
+        content: content,
+      });
+    }
+  }
+
+  function deleteTodo(id: string) {
+    client.models.Todo.delete({ id });
   }
 
   return (
-    <main>
-      <h1>My todos</h1>
-      <button onClick={createTodo}>+ new</button>
-      <ul>
-        {todos.map((todo) => (
-          <li key={todo.id}>{todo.content}</li>
-        ))}
-      </ul>
-      <div>
-        🥳 App successfully hosted. Try creating a new todo.
-        <br />
-        <a href="https://docs.amplify.aws/nextjs/start/quickstart/nextjs-app-router-client-components/">
-          Review next steps of this tutorial.
-        </a>
+    <main style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '2rem' }}>
+        <h1>Subscriptions to Cancel</h1>
+        <p>Keep track of services and subscriptions you want to cancel.</p>
       </div>
+      
+      <div style={{ marginBottom: '2rem' }}>
+        <button 
+          onClick={createTodo}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '1rem'
+          }}
+        >
+          + Add Subscription to Cancel
+        </button>
+      </div>
+
+      {todos.length > 0 ? (
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {todos.map((todo) => (
+            <li 
+              key={todo.id} 
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1rem',
+                margin: '0.5rem 0',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '4px',
+                border: '1px solid #e0e0e0'
+              }}
+            >
+              <span>{todo.content}</span>
+              <button
+                onClick={() => deleteTodo(todo.id)}
+                style={{
+                  padding: '0.25rem 0.5rem',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem'
+                }}
+              >
+                Cancelled ✓
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div style={{
+          textAlign: 'center',
+          padding: '3rem',
+          color: '#6c757d',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '8px',
+          border: '2px dashed #dee2e6'
+        }}>
+          <p>No subscriptions to cancel yet!</p>
+          <p>Add subscriptions you want to remember to cancel.</p>
+        </div>
+      )}
     </main>
   );
 }
