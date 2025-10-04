@@ -1,17 +1,71 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
 
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any user authenticated via an API key can "create", "read",
-"update", and "delete" any "Todo" records.
+/*== CANCEL MY STUFF DATA MODELS =========================================
+This section defines the data models for the Cancel My Stuff application:
+- Transaction: Represents financial transactions from bank/credit card data
+- DetectionItem: Represents subscription items detected in transactions
+- Artifact: Represents files, documents, or data related to transactions and detections
 =========================================================================*/
 const schema = a.schema({
-  Todo: a
+  Transaction: a
     .model({
-      content: a.string(),
+      amount: a.float().required(),
+      date: a.date().required(),
+      description: a.string().required(),
+      merchant: a.string(),
+      category: a.string(),
+      // Relationships
+      detectionItems: a.hasMany("DetectionItem", "transactionId"),
+      artifacts: a.hasMany("Artifact", "transactionId"),
     })
-    .authorization((allow) => [allow.publicApiKey()]),
+    .authorization((allow) => [
+      allow.owner(),
+      allow.publicApiKey().to(["create", "read"]),
+    ]),
+
+  DetectionItem: a
+    .model({
+      itemName: a.string().required(),
+      subscriptionType: a.enum(["MONTHLY", "ANNUAL", "WEEKLY", "ONE_TIME"]),
+      status: a.enum(["DETECTED", "CONFIRMED", "CANCELLED", "IGNORED"]),
+      detectedAmount: a.float(),
+      confidence: a.float(),
+      cancellationDate: a.date(),
+      cancellationUrl: a.url(),
+      notes: a.string(),
+      // Reference fields for relationships
+      transactionId: a.id().required(),
+      // Relationships
+      transaction: a.belongsTo("Transaction", "transactionId"),
+      artifacts: a.hasMany("Artifact", "detectionItemId"),
+    })
+    .authorization((allow) => [
+      allow.owner().to(["create", "read", "update", "delete"]),
+      allow.publicApiKey().to(["create", "read"]),
+    ]),
+
+  Artifact: a
+    .model({
+      filePath: a.string().required(),
+      contentType: a.string().required(),
+      fileSize: a.integer(),
+      metadata: a.customType({
+        originalFileName: a.string(),
+        uploadedAt: a.datetime(),
+        tags: a.string().array(),
+      }),
+      artifactType: a.enum(["SCREENSHOT", "DOCUMENT", "RECEIPT", "EMAIL", "OTHER"]),
+      // Reference fields for relationships
+      transactionId: a.id(),
+      detectionItemId: a.id(),
+      // Relationships
+      transaction: a.belongsTo("Transaction", "transactionId"),
+      detectionItem: a.belongsTo("DetectionItem", "detectionItemId"),
+    })
+    .authorization((allow) => [
+      allow.owner().to(["create", "read", "update", "delete"]),
+      allow.publicApiKey().to(["create", "read"]),
+    ]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
