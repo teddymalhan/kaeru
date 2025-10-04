@@ -3,46 +3,71 @@
 import { useState, useEffect } from "react";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
+import Link from "next/link";
 import "./../app/app.css";
 
 const client = generateClient<Schema>();
 
 export default function App() {
-  const [todos, setTodos] = useState<Array<Schema["Todo"]["type"]>>([]);
+  const [subscriptions, setSubscriptions] = useState<Array<Schema["DetectionItem"]["type"]>>([]);
 
-  function listTodos() {
-    client.models.Todo.observeQuery().subscribe({
-      next: (data) => setTodos([...data.items]),
+  function listSubscriptions() {
+    client.models.DetectionItem.observeQuery().subscribe({
+      next: (data) => setSubscriptions([...data.items]),
     });
   }
 
   useEffect(() => {
-    listTodos();
+    listSubscriptions();
   }, []);
 
-  function createTodo() {
+  async function createSubscription() {
     const content = window.prompt("What subscription or service do you want to cancel?");
     if (content) {
-      client.models.Todo.create({
-        content: content,
+      // Create a dummy transaction first (required for DetectionItem)
+      const transaction = await client.models.Transaction.create({
+        amount: 0,
+        date: new Date().toISOString().split('T')[0],
+        description: `Subscription: ${content}`,
       });
+
+      if (transaction.data) {
+        await client.models.DetectionItem.create({
+          itemName: content,
+          subscriptionType: 'MONTHLY',
+          status: 'DETECTED',
+          transactionId: transaction.data.id,
+        });
+      }
     }
   }
 
-  function deleteTodo(id: string) {
-    client.models.Todo.delete({ id });
+  function deleteSubscription(id: string) {
+    client.models.DetectionItem.delete({ id });
   }
 
   return (
     <main style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ marginBottom: '2rem' }}>
-        <h1>Subscriptions to Cancel</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h1>Subscriptions to Cancel</h1>
+          <Link href="/debug" style={{
+            padding: '0.5rem 1rem',
+            backgroundColor: '#6c757d',
+            color: 'white',
+            textDecoration: 'none',
+            borderRadius: '4px',
+            fontSize: '0.875rem'
+          }}>
+            🔧 Debug Mode
+          </Link>
+        </div>
         <p>Keep track of services and subscriptions you want to cancel.</p>
       </div>
       
       <div style={{ marginBottom: '2rem' }}>
         <button 
-          onClick={createTodo}
+          onClick={createSubscription}
           style={{
             padding: '0.75rem 1.5rem',
             backgroundColor: '#007bff',
@@ -57,11 +82,11 @@ export default function App() {
         </button>
       </div>
 
-      {todos.length > 0 ? (
+      {subscriptions.length > 0 ? (
         <ul style={{ listStyle: 'none', padding: 0 }}>
-          {todos.map((todo) => (
+          {subscriptions.map((subscription) => (
             <li 
-              key={todo.id} 
+              key={subscription.id} 
               style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -73,9 +98,14 @@ export default function App() {
                 border: '1px solid #e0e0e0'
               }}
             >
-              <span>{todo.content}</span>
+              <div>
+                <span>{subscription.itemName}</span>
+                <div style={{ fontSize: '0.875rem', color: '#6c757d' }}>
+                  {subscription.subscriptionType} • Status: {subscription.status}
+                </div>
+              </div>
               <button
-                onClick={() => deleteTodo(todo.id)}
+                onClick={() => deleteSubscription(subscription.id)}
                 style={{
                   padding: '0.25rem 0.5rem',
                   backgroundColor: '#dc3545',
