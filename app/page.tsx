@@ -101,7 +101,7 @@ export default function App() {
           border: '2px dashed #dee2e6'
         }}>
           <p>No subscriptions to cancel yet!</p>
-          <p>Add subscriptions you want to remember to cancel.</p>
+          <p>Add subscriptions that you want cancelled on time.</p>
         </div>
       )}
     </main>
