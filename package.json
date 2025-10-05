@@ -64,10 +64,17 @@
     "next-themes": "^0.4.6",
     "plaid": "^13.0.0",
     "postcss": "^8.5.6",
+<<<<<<< HEAD
     "puppeteer": "^24.23.0",
     "react": "^18",
     "react-day-picker": "^9.11.0",
     "react-dom": "^18",
+=======
+    "puppeteer": "^24.23.0",
+    "react": "^18",
+    "react-day-picker": "^9.11.0",
+    "react-dom": "^18",
+>>>>>>> 4693266 (chore: downgrade react and react-dom to version 18.3.1 for compatibility)
     "react-hook-form": "^7.64.0",
     "react-plaid-link": "^4.1.1",
     "react-resizable-panels": "^3.0.6",
