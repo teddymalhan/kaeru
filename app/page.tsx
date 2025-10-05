@@ -31,10 +31,6 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Button size="lg">Launch Workflow</Button>
-            <Button variant="outline" size="lg">
-              View Live Activity
-            </Button>
             <span className="text-sm text-muted-foreground/80">
               Setup requires connecting your accounts and providers.
             </span>
@@ -44,12 +40,7 @@ export default function Home() {
 
       {/* Agent Status & Quick Actions */}
       <section className="grid gap-6 md:grid-cols-2">
-        <AgentStatus />
         <QuickActions />
-      </section>
-
-      {/* Bank Connection */}
-      <section className="motion-safe:animate-fade-up">
         <PlaidLink />
       </section>
 

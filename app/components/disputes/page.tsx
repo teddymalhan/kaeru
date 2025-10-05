@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
@@ -74,6 +75,7 @@ const formatDate = new Intl.DateTimeFormat("en-US", {
 })
 
 export default function DisputesPage() {
+  const router = useRouter()
   const [creating, setCreating] = useState(false)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
@@ -182,6 +184,8 @@ export default function DisputesPage() {
           status: "completed",
           data: t ?? { id: selectedId },
         })
+        // Redirect to the universal ledger after creating a dispute
+        router.push("/components/transactions")
       }
     } catch (error) {
       setCreateOutcome({ status: "error", httpStatus: 0, timestamp: Date.now(), payload: null, error })
@@ -218,100 +222,10 @@ export default function DisputesPage() {
                 File new disputes and review items you filed from the dashboard. Status updates appear as they change.
               </p>
             </div>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button size="lg" className="rounded-full px-6">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Dispute
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Select a transaction to dispute</DialogTitle>
-                  <DialogDescription>
-                    Search and choose the specific transaction you want our agent to dispute.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
-                    <input
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      placeholder="Search by merchant, amount, category, or ID"
-                      className="h-10 w-full rounded-full border border-border/60 bg-background/70 pl-10 pr-3 text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-                  <div className="max-h-80 overflow-auto rounded-xl border border-border/60">
-                    <div className="divide-y divide-border/60">
-                      {txnItems
-                        .filter((t) => {
-                          const q = query.trim().toLowerCase()
-                          if (!q) return true
-                          return (
-                            t.merchant.toLowerCase().includes(q) ||
-                            t.category.toLowerCase().includes(q) ||
-                            t.id.toLowerCase().includes(q) ||
-                            String(t.amount).includes(q)
-                          )
-                        })
-                        .slice()
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                        .map((t) => {
-                          const isSelected = selectedId === t.id
-                          const alreadyFiled = isDisputeFiled(t.id)
-                          return (
-                            <button
-                              type="button"
-                              key={t.id}
-                              onClick={() => !alreadyFiled && setSelectedId(t.id)}
-                              className={cn(
-                                "flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-surface",
-                                alreadyFiled
-                                  ? "bg-muted/40 text-muted-foreground cursor-not-allowed"
-                                  : isSelected
-                                    ? "bg-primary/10 text-primary"
-                                    : "hover:bg-primary/5 text-foreground"
-                              )}
-                            >
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="truncate text-sm font-semibold">{t.merchant}</span>
-                                  {alreadyFiled && (
-                                    <span className="rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">
-                                      Filed
-                                    </span>
-                                  )}
-                                  {t.status === "flagged" && (
-                                    <span className="rounded-full border border-destructive/40 bg-destructive/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
-                                      Flagged
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-muted-foreground/80">
-                                  {t.category} • {new Date(t.date).toLocaleDateString()} • ID {t.id}
-                                </div>
-                              </div>
-                              <div className="text-right text-sm font-semibold">
-                                ${'{'}t.amount.toFixed(2){'}'}
-                              </div>
-                            </button>
-                          )
-                        })}
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter className="mt-3">
-                  <Button
-                    onClick={handleNewDispute}
-                    disabled={!selectedId || creating}
-                    className="rounded-full px-5"
-                  >
-                    {creating ? "Creating…" : "Create Dispute"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button size="lg" className="rounded-full px-6" onClick={() => router.push("/components/transactions") }>
+              <Plus className="mr-2 h-4 w-4" />
+              New Dispute
+            </Button>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

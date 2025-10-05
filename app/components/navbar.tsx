@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "./ui/button"
-import { Bell, Settings, User, Menu, X } from "lucide-react"
+import { User, Menu, X } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,12 +36,11 @@ export function Navbar() {
         <div className="glass-surface transition-surface flex h-14 items-center justify-between rounded-full border border-border/60 bg-background/75 px-4 shadow-[var(--shadow-soft)] backdrop-blur-xl motion-safe:animate-fade-down md:px-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 text-sm font-semibold tracking-tight text-foreground/80 transition-opacity hover:text-foreground">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/85 to-accent text-primary-foreground shadow-lg shadow-primary/30">
-              CMS
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary via-primary/85 to-accent text-primary-foreground shadow-lg shadow-primary/30">
+              カエル
             </div>
             <div className="hidden flex-col leading-none sm:flex">
-              <span className="text-sm font-semibold">Cancel My Stuff</span>
-              <span className="text-xs font-medium text-muted-foreground">Account Automation</span>
+              <span className="text-sm font-semibold">Kaeru</span>
             </div>
           </Link>
 
@@ -76,24 +75,7 @@ export function Navbar() {
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
 
-            {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative hidden rounded-full border border-transparent bg-transparent hover:border-primary/30 hover:text-primary sm:flex"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive animate-pulse" />
-            </Button>
-
-            {/* Settings */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden rounded-full border border-transparent bg-transparent hover:border-primary/30 hover:text-primary sm:flex"
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
+            {/* Notifications and Settings removed */}
 
             {/* Theme Toggle */}
             <ThemeToggle />
@@ -123,10 +105,6 @@ export function Navbar() {
                 <DropdownMenuItem>
                   <User className="mr-2 h-4 w-4" />
                   Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-destructive" onClick={() => signOut()}>

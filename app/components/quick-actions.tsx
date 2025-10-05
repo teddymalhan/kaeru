@@ -117,9 +117,9 @@ export function QuickActions() {
         return
       }
 
-      // For "New Dispute", open selector modal instead of calling immediately
+      // For "New Dispute", redirect to the universal ledger (transactions)
       if (action.key === "new-dispute") {
-        setDisputeOpen(true)
+        router.push("/components/transactions")
         return
       }
 

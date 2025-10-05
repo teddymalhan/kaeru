@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       user: {
         client_user_id: userId,
       },
-      client_name: 'Cancel My Stuff',
+      client_name: 'Kaeru',
       products: [Products.Transactions],
       country_codes: [CountryCode.Us],
       language: 'en',

@@ -195,7 +195,7 @@ export default function TransactionsPage() {
                 size="lg"
                 className="rounded-full px-6"
                 onClick={() => {
-                  const title = "Cancel My Stuff — Transaction Report"
+                  const title = "Kaeru — Transaction Report"
                   const today = new Date()
                   const formattedDate = today.toLocaleString(undefined, {
                     year: "numeric",
@@ -274,7 +274,7 @@ export default function TransactionsPage() {
                       <body>
                         <div class="header">
                           <div class="brand">
-                            <div class="logo">CMS</div>
+                            <div class="logo">カエル</div>
                             <div>
                               <h1>Transaction Report</h1>
                               <div class="muted">Generated ${formattedDate}</div>
@@ -329,7 +329,7 @@ export default function TransactionsPage() {
                         </div>
 
                         <footer>
-                          <span>Cancel My Stuff</span>
+                          <span>Kaeru</span>
                           <span>Confidential · ${today.getFullYear()}</span>
                         </footer>
                         <script>
