@@ -42,11 +42,13 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
-                <Button variant={pathname === link.href ? "default" : "ghost"} size="sm" className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`relative ${pathname === link.href ? "bg-black text-white rounded-lg" : ""}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   {link.label}
-                  {pathname === link.href && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-0.5 bg-primary rounded-full" />
-                  )}
                 </Button>
               </Link>
             ))}
