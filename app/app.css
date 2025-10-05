@@ -4,116 +4,188 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --border: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --font-sans: "Inter", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --background: oklch(0.985 0.02 250);
+  --foreground: oklch(0.18 0.02 250);
+  --muted: oklch(0.96 0.01 240);
+  --muted-foreground: oklch(0.49 0.02 250);
+  --card: oklch(0.99 0.015 255);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --border: oklch(0.9 0.01 250);
+  --ring: oklch(0.72 0.1 265);
+  --primary: oklch(0.63 0.2 264);
+  --primary-foreground: oklch(0.98 0.02 260);
+  --secondary: oklch(0.94 0.03 210);
+  --secondary-foreground: oklch(0.32 0.02 240);
+  --accent: oklch(0.9 0.07 320);
+  --accent-foreground: oklch(0.33 0.05 320);
+  --destructive: oklch(0.58 0.24 30);
+  --destructive-foreground: oklch(0.97 0.01 20);
+  --shadow-soft: 0 28px 64px -32px color-mix(in srgb, #5561ff 35%, transparent);
+  --shadow-strong: 0 32px 80px -40px color-mix(in srgb, #1c1f4a 65%, transparent);
+  --easing-standard: cubic-bezier(0.32, 0.72, 0, 1);
+  --easing-emphasized: cubic-bezier(0.2, 0.8, 0.16, 1);
 }
 
-/* Dark mode vars */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --border: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  --background: oklch(0.16 0.02 255);
+  --foreground: oklch(0.96 0.01 255);
+  --muted: oklch(0.22 0.01 255);
+  --muted-foreground: oklch(0.76 0.015 255);
+  --card: oklch(0.21 0.015 255);
+  --card-foreground: oklch(0.94 0.01 255);
+  --popover: oklch(0.24 0.015 255);
+  --popover-foreground: var(--card-foreground);
+  --border: oklch(0.29 0.007 255);
+  --ring: oklch(0.68 0.18 265);
+  --primary: oklch(0.7 0.19 264);
+  --primary-foreground: oklch(0.13 0.02 264);
+  --secondary: oklch(0.28 0.02 220);
+  --secondary-foreground: var(--foreground);
+  --accent: oklch(0.38 0.05 320);
+  --accent-foreground: oklch(0.92 0.015 320);
+  --destructive: oklch(0.53 0.23 30);
+  --destructive-foreground: oklch(0.99 0.01 20);
+  --shadow-soft: 0 28px 64px -32px color-mix(in srgb, #5a66ff 45%, transparent);
+  --shadow-strong: 0 32px 80px -36px color-mix(in srgb, #111325 80%, transparent);
 }
 
-/* ✅ Define Tailwind tokens */
 @theme inline {
+  --font-sans: var(--font-sans);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-border: var(--border);
   --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 }
 
-/* ✅ Apply utilities after definitions */
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+  *,
+  *::before,
+  *::after {
+    @apply border-border outline-ring/40;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    position: relative;
+    transition: background-color 400ms var(--easing-standard), color 400ms var(--easing-standard);
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--primary) 18%, transparent) 0%, transparent 55%),
+      radial-gradient(circle at 85% 10%, color-mix(in srgb, var(--accent) 22%, transparent) 0%, transparent 50%),
+      linear-gradient(180deg, color-mix(in srgb, var(--background) 90%, transparent) 0%, transparent 100%);
+    opacity: 0.85;
+    transition: opacity 400ms var(--easing-standard);
+  }
+
+  .dark body::before {
+    opacity: 0.55;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    letter-spacing: -0.03em;
+    font-weight: 600;
+  }
+
+  a,
+  button,
+  [role="button"],
+  input,
+  textarea {
+    transition: all 240ms var(--easing-standard);
   }
 }
 
-/* Remove hover effects */
-button:hover, a:hover {
-  background-color: unset;
-  color: unset;
-  border-radius: unset;
-}
-
-/* Remove previous active state styles */
-.nav-link.active {
-  background-color: unset;
-  color: unset;
-  border-radius: unset;
-  padding: unset;
-}
-
-/* Dropdown Menu Animation */
-.dropdown-menu {
-  background-color: var(--background);
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  opacity: 0;
-  transform: translateY(-10px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-.dropdown-menu.open {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Mobile menu slide-in */
-.mobile-menu {
-  transform: translateY(-100%);
-  transition: transform 0.3s ease;
-}
-.mobile-menu.open {
-  transform: translateY(0);
-}
-
-/* Notification indicator */
-.notification-indicator {
-  background-color: var(--destructive);
-  border-radius: 50%;
-  width: 8px;
-  height: 8px;
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  animation: pulse 1.5s infinite;
-}
-@keyframes pulse {
-  0%, 100% {
-    transform: scale(1);
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
     opacity: 1;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.7;
+    transform: translateY(0) scale(1);
   }
 }
 
-/* Button click feedback */
-button:active {
-  transform: scale(0.95);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+@keyframes fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-/* Badge color coding */
-.badge-high-risk {
-  background-color: #FF4C60; /* Vibrant Red */
-  color: #FFFFFF; /* White text */
+@keyframes surface-intro {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.badge-medium-risk {
-  background-color: #FFB400; /* Golden Yellow */
-  color: #FFFFFF; /* White text */
-}
+@layer utilities {
+  .animate-fade-up {
+    animation: fade-up 600ms var(--easing-standard) both;
+  }
 
-.badge-low-risk {
-  background-color: #4ECDC4; /* Teal */
-  color: #FFFFFF; /* White text */
+  .animate-fade-down {
+    animation: fade-down 500ms var(--easing-standard) both;
+  }
+
+  .animate-surface-intro {
+    animation: surface-intro 620ms var(--easing-standard) both;
+  }
+
+  .transition-surface {
+    transition: transform 360ms var(--easing-emphasized),
+      box-shadow 420ms var(--easing-emphasized),
+      border-color 420ms var(--easing-emphasized),
+      background-color 360ms var(--easing-standard);
+  }
+
+  .glass-surface {
+    background: color-mix(in srgb, var(--card) 92%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(18px);
+  }
+
+  .glass-surface:hover {
+    box-shadow: var(--shadow-strong);
+  }
 }

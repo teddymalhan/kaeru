@@ -1,6 +1,5 @@
 "use client"
 
-import { Shield, Bell, Settings, User, Plus } from "lucide-react";
 import { Navbar } from "./components/navbar";
 import { Stats } from "./components/Stats";
 import { AgentStatus } from "./components/AgentStatus";
@@ -16,11 +15,11 @@ export default function App() {
       <Navbar />
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8 bg-gray-50 min-h-screen">
+      <div className="container mx-auto px-6 py-8 bg-background min-h-screen">
         {/* Page Title */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Financial Agent Dashboard</h1>
-          <p className="text-sm text-gray-600">Monitor your AI agent's activity, manage tasks, and track performance</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">AI Financial Agent Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Monitor your AI agent's activity, manage tasks, and track performance</p>
         </div>
 
         {/* Stats Overview */}
@@ -30,28 +29,28 @@ export default function App() {
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="w-full justify-start bg-transparent border-b border-gray-200 rounded-none p-0 h-auto gap-8">
+          <TabsList className="w-full justify-start bg-transparent border-b border-border rounded-none p-0 h-auto gap-8">
             <TabsTrigger 
               value="overview" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-gray-900 data-[state=active]:bg-transparent pb-3 px-0 font-medium text-gray-600 data-[state=active]:text-gray-900 data-[state=active]:shadow-none"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3 px-0 font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
             >
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="tasks" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-gray-900 data-[state=active]:bg-transparent pb-3 px-0 font-medium text-gray-600 data-[state=active]:text-gray-900 data-[state=active]:shadow-none"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3 px-0 font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
             >
               Tasks
             </TabsTrigger>
             <TabsTrigger 
               value="calls" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-gray-900 data-[state=active]:bg-transparent pb-3 px-0 font-medium text-gray-600 data-[state=active]:text-gray-900 data-[state=active]:shadow-none"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3 px-0 font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
             >
               Calls
             </TabsTrigger>
             <TabsTrigger 
               value="fraud" 
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-gray-900 data-[state=active]:bg-transparent pb-3 px-0 font-medium text-gray-600 data-[state=active]:text-gray-900 data-[state=active]:shadow-none"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent pb-3 px-0 font-medium text-muted-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none"
             >
               Fraud Detection
             </TabsTrigger>
@@ -88,7 +87,7 @@ export default function App() {
             <div className="grid lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 {/* <CallQueue /> */}
-                <div className="p-6 bg-white rounded-lg border border-gray-200 text-gray-600">
+                <div className="p-6 bg-card rounded-lg border border-border text-muted-foreground">
                   Call queue component not found.
                 </div>
               </div>

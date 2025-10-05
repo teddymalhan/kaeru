@@ -6,6 +6,7 @@ import { Button } from "@/app/components/ui/button"
 import type { LucideIcon } from "lucide-react"
 import { Phone, XCircle, AlertTriangle } from "lucide-react"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
+import { cn } from "@/lib/utils"
 
 type QuickAction = {
   key: string
@@ -120,8 +121,11 @@ export function QuickActions() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Quick Actions</CardTitle>
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-base font-semibold">Quick Actions</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Launch concierge workflows without leaving the dashboard.
+        </p>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-3">
@@ -133,7 +137,10 @@ export function QuickActions() {
               <Button
                 key={action.key}
                 variant="outline"
-                className="h-auto flex-col gap-2 py-4 bg-transparent"
+                className={cn(
+                  "h-auto flex-col gap-2 rounded-2xl border-border/60 bg-background/80 py-4 text-sm font-medium",
+                  isLoading && "pointer-events-none opacity-80"
+                )}
                 onClick={() => void handleAction(action)}
                 disabled={isLoading}
                 aria-busy={isLoading}
@@ -148,12 +155,15 @@ export function QuickActions() {
         <div className="mt-6 space-y-3">
           {actions.map((action) => {
             const outcome = outcomes[action.key]
-            const statusColor = outcome?.status === "success" ? "text-green-600" : "text-red-600"
+            const statusColor = outcome?.status === "success" ? "text-emerald-500 dark:text-emerald-300" : "text-destructive"
 
             return (
-              <div key={`${action.key}-outcome`} className="rounded-lg border p-3 bg-muted/30">
+              <div
+                key={`${action.key}-outcome`}
+                className="rounded-2xl border border-border/60 bg-background/70 p-4 shadow-sm"
+              >
                 <div className="flex items-center justify-between text-sm">
-                  <p className="font-medium">{action.label}</p>
+                  <p className="font-semibold text-foreground/90">{action.label}</p>
                   {outcome ? (
                     <span className={`${statusColor} font-semibold`}>
                       {outcome.status.toUpperCase()} • HTTP {outcome.httpStatus}
@@ -167,7 +177,7 @@ export function QuickActions() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {new Date(outcome.timestamp).toLocaleTimeString()} • {outcome.error ? "Error payload" : "Response payload"}
                     </p>
-                    <pre className="mt-2 max-h-40 overflow-auto rounded bg-background p-2 text-xs">
+                    <pre className="mt-2 max-h-40 overflow-auto rounded-2xl border border-border/50 bg-card/80 p-3 text-xs text-muted-foreground">
                       {JSON.stringify(outcome.error ?? outcome.payload, null, 2)}
                     </pre>
                   </>

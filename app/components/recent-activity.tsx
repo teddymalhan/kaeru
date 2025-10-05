@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Badge } from "@/app/components/ui/badge"
 import { Phone, CheckCircle2, Clock } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const activities = [
   {
@@ -60,8 +61,11 @@ const statusConfig = {
 export function RecentActivity() {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Live chronicle of agent interventions across calls, disputes, and workflows.
+        </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -72,20 +76,26 @@ export function RecentActivity() {
             return (
               <div
                 key={activity.id}
-                className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                className="flex items-start gap-3 rounded-2xl border border-transparent bg-background/60 px-4 py-4 transition-surface hover:border-primary/20 hover:bg-primary/10"
               >
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Icon className="h-5 w-5 text-primary" />
+                <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                  <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-medium text-sm">{activity.title}</p>
-                    <Badge variant={config.variant} className="text-xs">
+                  <div className="mb-1 flex items-center gap-2">
+                    <p className="text-sm font-medium text-foreground/90">{activity.title}</p>
+                    <Badge
+                      variant={config.variant}
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[0.65rem] uppercase tracking-wide",
+                        config.variant === "outline" && "border-border/70"
+                      )}
+                    >
                       {config.badge}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">{activity.description}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                  <p className="mt-1 text-xs text-muted-foreground/80">{activity.time}</p>
                 </div>
               </div>
             )

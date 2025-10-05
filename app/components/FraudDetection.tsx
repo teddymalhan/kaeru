@@ -1,8 +1,4 @@
 import { AlertTriangle, Shield } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 
 const suspiciousTransactions = [
 	{
@@ -34,31 +30,35 @@ const suspiciousTransactions = [
 function getRiskColor(level: string) {
 	switch (level) {
 		case "high":
-			return "bg-red-100 text-red-800";
+			return "bg-red-100 text-red-800 dark:bg-red-500/30 dark:text-red-100";
 		case "medium":
-			return "bg-yellow-100 text-yellow-800";
+			return "bg-amber-100 text-amber-800 dark:bg-amber-500/30 dark:text-amber-100";
 		case "low":
-			return "bg-green-100 text-green-800";
+			return "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/30 dark:text-emerald-100";
 		default:
-			return "bg-gray-100 text-gray-800";
+			return "bg-muted text-foreground";
 	}
 }
 
 export function FraudDetection() {
 	return (
-		<div className="bg-gradient-to-r from-gray-50 to-white border border-gray-300 rounded-lg p-6 shadow-md">
-			<div className="flex items-center gap-2 mb-5">
-				<AlertTriangle className="h-6 w-6 text-gray-900" />
-				<h3 className="text-lg font-bold text-gray-900">Fraud Detection</h3>
+		<div className="rounded-3xl border border-border/60 bg-card/90 p-6 shadow-[var(--shadow-soft)] backdrop-blur-sm">
+			<div className="mb-5 flex items-center gap-3">
+				<span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+					<AlertTriangle className="h-5 w-5" />
+				</span>
+				<div>
+					<h3 className="text-lg font-semibold text-foreground">Fraud Detection</h3>
+					<p className="text-sm text-muted-foreground">Stay ahead of risky transactions with adaptive scoring.</p>
+				</div>
 			</div>
 
-			<div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-5">
-				<p className="text-sm font-bold text-gray-900 mb-1.5">
+			<div className="mb-5 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-100/70 via-background to-background px-5 py-4 dark:border-amber-400/40 dark:from-amber-500/25 dark:via-background/60">
+				<p className="text-sm font-semibold text-foreground">
 					3 Suspicious Transactions Detected
 				</p>
-				<p className="text-xs text-gray-600">
-					Our AI has identified potentially fraudulent activity. Review and dispute
-					if necessary.
+				<p className="mt-1 text-xs text-muted-foreground">
+					Our AI has identified potentially fraudulent activity. Review and dispute if necessary.
 				</p>
 			</div>
 
@@ -66,7 +66,7 @@ export function FraudDetection() {
 				{suspiciousTransactions.map((transaction) => (
 					<div
 						key={transaction.id}
-						className="flex items-start gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+						className="flex items-start gap-4 rounded-2xl border border-border/60 bg-muted/40 p-4 transition-surface hover:border-primary/35 hover:bg-muted/60 hover:shadow-[var(--shadow-soft)] dark:bg-muted/20"
 					>
 						<div
 							className={`flex items-center justify-center w-10 h-10 rounded-full ${getRiskColor(
@@ -76,11 +76,11 @@ export function FraudDetection() {
 							<Shield className="h-5 w-5" />
 						</div>
 						<div>
-							<h3 className="text-lg font-semibold text-gray-800">
+							<h3 className="text-lg font-semibold text-foreground">
 								{transaction.amount}
 							</h3>
-							<p className="text-sm text-gray-600">{transaction.merchant}</p>
-							<div className="text-xs text-gray-500 mt-1">
+							<p className="text-sm text-muted-foreground">{transaction.merchant}</p>
+							<div className="text-xs text-muted-foreground/80 mt-1">
 								{transaction.date} • {transaction.reason}
 							</div>
 						</div>

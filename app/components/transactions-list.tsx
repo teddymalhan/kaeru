@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/ca
 import { Badge } from "@/app/components/ui/badge"
 import { Button } from "@/app/components/ui/button"
 import { AlertTriangle, TrendingDown, TrendingUp } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const transactions = [
   {
@@ -51,31 +52,39 @@ const transactions = [
 export function TransactionsList() {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="space-y-1">
+        <CardTitle className="flex items-center justify-between text-base font-semibold">
           <span>Recent Transactions</span>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="rounded-full px-4">
             View All
           </Button>
         </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Follow the latest revenue and refunds processed by your agents.
+        </p>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {transactions.map((transaction) => (
             <div
               key={transaction.id}
-              className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors"
+              className="flex items-center justify-between gap-4 rounded-2xl border border-transparent bg-background/50 px-4 py-3 transition-surface hover:border-primary/25 hover:bg-primary/10"
             >
               <div className="flex items-center gap-3 flex-1">
                 <div
-                  className={`h-10 w-10 rounded-full flex items-center justify-center ${
-                    transaction.flagged ? "bg-destructive/10" : transaction.amount > 0 ? "bg-accent/10" : "bg-muted"
-                  }`}
+                  className={cn(
+                    "flex h-11 w-11 items-center justify-center rounded-xl",
+                    transaction.flagged
+                      ? "bg-destructive/10 text-destructive"
+                      : transaction.amount > 0
+                        ? "bg-emerald-100/40 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-200"
+                        : "bg-muted text-muted-foreground"
+                  )}
                 >
                   {transaction.flagged ? (
                     <AlertTriangle className="h-5 w-5 text-destructive" />
                   ) : transaction.amount > 0 ? (
-                    <TrendingUp className="h-5 w-5 text-accent" />
+                    <TrendingUp className="h-5 w-5" />
                   ) : (
                     <TrendingDown className="h-5 w-5 text-muted-foreground" />
                   )}
@@ -94,7 +103,14 @@ export function TransactionsList() {
                   </p>
                 </div>
               </div>
-              <p className={`font-semibold ${transaction.amount > 0 ? "text-accent" : "text-foreground"}`}>
+              <p
+                className={cn(
+                  "font-semibold tabular-nums",
+                  transaction.amount > 0
+                    ? "text-emerald-600 dark:text-emerald-300"
+                    : "text-foreground"
+                )}
+              >
                 {transaction.amount > 0 ? "+" : ""}${Math.abs(transaction.amount).toFixed(2)}
               </p>
             </div>

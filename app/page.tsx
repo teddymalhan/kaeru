@@ -4,39 +4,64 @@ import { RecentActivity } from "./components/recent-activity"
 import { QuickActions } from "./components/quick-actions"
 import { TransactionsList } from "./components/transactions-list"
 import { SubscriptionsList } from "./components/subscriptions-list"
+import { Button } from "./components/ui/button"
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="space-y-8">
-          {/* Hero Section */}
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight text-balance">Your AI Financial Assistant</h1>
-            <p className="text-lg text-muted-foreground text-pretty">
-              Automate returns, cancellations, disputes, and customer service calls while detecting fraud
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-background via-background to-primary/5 px-6 py-10 shadow-[var(--shadow-soft)] backdrop-blur-xl transition-surface motion-safe:animate-fade-up sm:px-10">
+        <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/20 blur-3xl" aria-hidden />
+        <div className="absolute bottom-0 right-0 h-40 w-40 translate-y-1/3 rounded-full bg-accent/20 blur-3xl" aria-hidden />
+        <div className="relative flex flex-col gap-6 text-pretty">
+          <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
+            <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[0.7rem] font-medium tracking-[0.18em]">
+              Product Studio Preview
+            </span>
+            <span className="hidden text-muted-foreground md:inline">Accelerate every cancellation, dispute, and refund</span>
+          </div>
+          <div className="space-y-4">
+            <h1 className="text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+              Your AI Financial Operations Partner
+            </h1>
+            <p className="max-w-2xl text-lg text-muted-foreground">
+              Orchestrate proactive cancellations, dispute filings, and customer outreach with a beautifully
+              choreographed agent experience. Every workflow is observable, auditable, and tuned for loyalty.
             </p>
           </div>
-
-          {/* Agent Status & Quick Actions */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <AgentStatus />
-            <QuickActions />
-          </div>
-
-          {/* Fraud Alerts */}
-          <FraudAlerts />
-
-          {/* Recent Activity */}
-          <RecentActivity />
-
-          {/* Transactions & Subscriptions */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <TransactionsList />
-            <SubscriptionsList />
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size="lg">Launch Workflow</Button>
+            <Button variant="outline" size="lg">
+              View Live Activity
+            </Button>
+            <span className="text-sm text-muted-foreground/80">
+              Under 90 seconds to spin up a branded concierge.
+            </span>
           </div>
         </div>
-      </main>
+      </section>
+
+      {/* Agent Status & Quick Actions */}
+      <section className="grid gap-6 md:grid-cols-2">
+        <AgentStatus />
+        <QuickActions />
+      </section>
+
+      {/* Fraud Alerts */}
+      <section className="motion-safe:animate-fade-up">
+        <FraudAlerts />
+      </section>
+
+      {/* Recent Activity */}
+      <section className="motion-safe:animate-fade-up">
+        <RecentActivity />
+      </section>
+
+      {/* Transactions & Subscriptions */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <TransactionsList />
+        <SubscriptionsList />
+      </section>
     </div>
   )
 }
