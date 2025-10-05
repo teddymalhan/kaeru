@@ -140,7 +140,7 @@ export default function DisputesPage() {
   const stats = useMemo(
     () => ({
       total: recentFiled.length,
-      inProgress: 0,
+      inProgress: recentFiled.length, // treat newly filed as in progress
       resolved: 0,
       pending: 0,
     }),

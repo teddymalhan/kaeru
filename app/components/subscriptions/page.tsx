@@ -46,16 +46,18 @@ export default function SubscriptionsPage() {
     return () => window.removeEventListener("cms:subscriptions", onSync)
   }, [])
 
-  const activeSubscriptions = useMemo(() => subs.filter((s) => s.status === "active"), [subs])
+  const activeSubscriptions = useMemo(
+    () => subs.filter((s) => !isSubscriptionCancelled(s.id)),
+    [subs],
+  )
   const totalMonthly = useMemo(
     () => activeSubscriptions.reduce((sum: number, s: any) => sum + s.amount, 0),
     [activeSubscriptions],
   )
-  const earliestNextBilling = useMemo(
-    () =>
-      [...subs].sort((a, b) => new Date(a.nextBilling).getTime() - new Date(b.nextBilling).getTime())[0],
-    [subs],
-  )
+  const earliestNextBilling = useMemo(() => {
+    const candidates = subs.filter((s) => !isSubscriptionCancelled(s.id))
+    return candidates.sort((a, b) => new Date(a.nextBilling).getTime() - new Date(b.nextBilling).getTime())[0]
+  }, [subs])
 
   const handleCancel = async (s: any) => {
     if (loadingId) return
@@ -180,7 +182,7 @@ export default function SubscriptionsPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {subs.map((subscription) => {
-            const isPaused = subscription.status === "paused"
+            const isCancelled = !!outcomes[subscription.id]?.ok
 
             return (
               <div
@@ -191,17 +193,18 @@ export default function SubscriptionsPage() {
                   <div className="flex flex-1 flex-col gap-1">
                     <div className="flex items-center gap-3">
                       <span className="text-base font-semibold text-foreground/90">{subscription.name}</span>
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-wide",
-                          isPaused
-                            ? "border-amber-400/40 bg-amber-500/15 text-amber-200"
-                            : "border-primary/25 bg-primary/10 text-primary"
-                        )}
-                      >
-                        {isPaused ? "Paused" : "Active"}
-                      </Badge>
+                      {!isCancelled ? (
+                        <Badge
+                          variant="outline"
+                          className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[0.65rem] uppercase tracking-wide text-primary"
+                        >
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge className="rounded-full border border-destructive/40 bg-destructive/15 px-3 py-1 text-[0.65rem] uppercase tracking-wide text-destructive">
+                          Cancelled
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground/80">
                       <span>{subscription.category}</span>
