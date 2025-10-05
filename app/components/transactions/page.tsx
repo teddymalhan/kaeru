@@ -164,7 +164,15 @@ export default function TransactionsPage() {
                       <div className="text-right">
                         <p className="font-semibold text-lg">${transaction.amount.toFixed(2)}</p>
                         {transaction.status === "flagged" ? (
-                          <Badge variant="destructive" className="mt-1">
+                          <Badge
+                            className={`mt-1 ${
+                              transaction.fraudScore > 70
+                                ? "badge-high-risk"
+                                : transaction.fraudScore > 30
+                                ? "badge-medium-risk"
+                                : "badge-low-risk"
+                            }`}
+                          >
                             Fraud Risk: {transaction.fraudScore}%
                           </Badge>
                         ) : (

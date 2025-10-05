@@ -17,7 +17,7 @@ import { useAuthenticator } from "@aws-amplify/ui-react"
 
 export function Navbar() {
   const pathname = usePathname()
-  const { user } = useAuthenticator((context) => [context.user])
+  const { user, signOut } = useAuthenticator((context) => [context.user, context.signOut])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navLinks = [
@@ -86,7 +86,7 @@ export function Navbar() {
                   <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-md">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium">{user?.signInDetails?.loginId || user?.username || "Guest"}</p>
@@ -101,12 +101,10 @@ export function Navbar() {
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem className="sm:hidden">
-                  <Bell className="mr-2 h-4 w-4" />
-                  Notifications
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">Log out</DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={() => signOut()}>
+                  Log out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
