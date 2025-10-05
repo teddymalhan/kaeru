@@ -1,15 +1,13 @@
-import { Header } from "@/app/components/header"
-import { AgentStatus } from "@/app/components/agent-status"
-import { FraudAlerts } from "@/app/components/fraud-alerts"
-import { RecentActivity } from "@/app/components/recent-activity"
-import { QuickActions } from "@/app/components/quick-actions"
-import { TransactionsList } from "@/app/components/transactions-list"
-import { SubscriptionsList } from "@/app/components/subscriptions-list"
+import { AgentStatus } from "./components/agent-status"
+import { FraudAlerts } from "./components/fraud-alerts"
+import { RecentActivity } from "./components/recent-activity"
+import { QuickActions } from "./components/quick-actions"
+import { TransactionsList } from "./components/transactions-list"
+import { SubscriptionsList } from "./components/subscriptions-list"
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="space-y-8">
           {/* Hero Section */}
