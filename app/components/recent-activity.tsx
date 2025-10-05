@@ -99,9 +99,6 @@ export function RecentActivity() {
             </Button>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">
-          Live chronicle of agent interventions across calls, disputes, and workflows.
-        </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">

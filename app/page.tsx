@@ -16,7 +16,7 @@ export default function Home() {
         <div className="relative flex flex-col gap-6 text-pretty">
           <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
             <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[0.7rem] font-medium tracking-[0.18em]">
-              Product Studio Preview
+              Preview Build
             </span>
             <span className="hidden text-muted-foreground md:inline">Accelerate every cancellation, dispute, and refund</span>
           </div>
@@ -25,8 +25,8 @@ export default function Home() {
               Your AI Financial Operations Partner
             </h1>
             <p className="max-w-2xl text-lg text-muted-foreground">
-              Orchestrate proactive cancellations, dispute filings, and customer outreach with a beautifully
-              choreographed agent experience. Every workflow is observable, auditable, and tuned for loyalty.
+              Manage cancellations, disputes, and basic customer outreach from one dashboard. Track activity,
+              see results, and export data when you need it.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -35,7 +35,7 @@ export default function Home() {
               View Live Activity
             </Button>
             <span className="text-sm text-muted-foreground/80">
-              Under 90 seconds to spin up a branded concierge.
+              Setup requires connecting your accounts and providers.
             </span>
           </div>
         </div>

@@ -211,12 +211,11 @@ export default function DisputesPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-destructive">
                 <ShieldAlert className="h-4 w-4" />
-                <span>Dispute Command Center</span>
+                <span>Disputes</span>
               </div>
-              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Resolve conflict with couture-grade UX</h1>
+              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Manage disputes in one place</h1>
               <p className="max-w-2xl text-base text-muted-foreground">
-                Every escalation is orchestrated with timestamps, transcripts, and recovery guidance so teams can close the
-                loop elegantly.
+                File new disputes and review items you filed from the dashboard. Status updates appear as they change.
               </p>
             </div>
             <Dialog open={open} onOpenChange={setOpen}>
@@ -391,9 +390,7 @@ export default function DisputesPage() {
         <CardHeader className="flex flex-col gap-4 pb-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <CardTitle className="text-lg font-semibold">Dispute Journal</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Each dispute is tracked through curated service playbooks, notes, and call outcomes.
-            </p>
+            <p className="text-sm text-muted-foreground">Filed disputes appear below.</p>
           </div>
           <Button variant="outline" className="rounded-full px-5">
             <FileText className="mr-2 h-4 w-4" />
