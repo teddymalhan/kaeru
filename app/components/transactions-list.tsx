@@ -7,6 +7,7 @@ import { Badge } from "@/app/components/ui/badge"
 import { Button } from "@/app/components/ui/button"
 import { AlertTriangle, TrendingDown, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 type Txn = { id: string; merchant: string; amount: number; date: string; category: string; status: string; fraudScore: number }
 
@@ -28,8 +29,8 @@ export function TransactionsList() {
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center justify-between text-base font-semibold">
           <span>Recent Transactions</span>
-          <Button variant="ghost" size="sm" className="rounded-full px-4">
-            View All
+          <Button asChild variant="ghost" size="sm" className="rounded-full px-4">
+            <Link href="/components/transactions">View All</Link>
           </Button>
         </CardTitle>
         <p className="text-sm text-muted-foreground">

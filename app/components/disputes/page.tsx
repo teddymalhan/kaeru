@@ -9,7 +9,7 @@ import { CheckCircle2, Clock, FileText, Phone, Plus, Search, ShieldAlert, XOctag
 import { cn } from "@/lib/utils"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
 import { addActivity } from "@/app/lib/activity"
-import { transactions as allTransactions } from "@/app/lib/sample-data"
+import { getFiledMap, isDisputeFiled, markDisputeFiled } from "@/app/lib/disputes-store"
 import {
   Dialog,
   DialogContent,
@@ -80,6 +80,8 @@ export default function DisputesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [items, setItems] = useState<Dispute[]>([])
   const [loading, setLoading] = useState(true)
+  const [recentFiled, setRecentFiled] = useState<Array<{ id: string; data: any; timestamp: number }>>([])
+  const [txnItems, setTxnItems] = useState<any[]>([])
   const [createOutcome, setCreateOutcome] = useState<
     | { status: "success" | "error"; httpStatus: number; timestamp: number; payload: unknown | null; error: unknown | null }
     | null
@@ -103,19 +105,46 @@ export default function DisputesPage() {
         setLoading(false)
       }
     })()
+    // seed "recently filed" from shared registry and subscribe for live updates
+    const seed = () => {
+      const map = getFiledMap()
+      const rows = Object.values(map)
+        .map((r) => ({ id: r.id, data: r.data ?? null, timestamp: r.timestamp }))
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 10)
+      setRecentFiled(rows)
+    }
+    seed()
+    const onDisputes = () => seed()
+    window.addEventListener("cms:disputes", onDisputes)
     return () => {
       mounted = false
+      window.removeEventListener("cms:disputes", onDisputes)
     }
   }, [])
 
+  // Fetch transactions for selector when dialog opens
+  useEffect(() => {
+    if (!open) return
+    ;(async () => {
+      try {
+        const res = await fetch("/api/transactions", { cache: "no-store" })
+        const json = await res.json()
+        setTxnItems(Array.isArray(json.items) ? json.items : [])
+      } catch {
+        setTxnItems([])
+      }
+    })()
+  }, [open])
+
   const stats = useMemo(
     () => ({
-      total: items.length,
-      inProgress: items.filter((d) => d.status === "in_progress").length,
-      resolved: items.filter((d) => d.status === "resolved").length,
-      pending: items.filter((d) => d.status === "pending").length,
+      total: recentFiled.length,
+      inProgress: 0,
+      resolved: 0,
+      pending: 0,
     }),
-    [items],
+    [recentFiled],
   )
 
   const handleNewDispute = useCallback(async () => {
@@ -130,7 +159,7 @@ export default function DisputesPage() {
           action: "dispute",
           detectionItemId: selectedId,
           userId: "user456",
-          metadata: (allTransactions.find((t) => t.id === selectedId) ?? null) as unknown,
+          metadata: (txnItems.find((t: any) => t.id === selectedId) ?? null) as unknown,
         },
       })
       setCreateOutcome({
@@ -142,7 +171,8 @@ export default function DisputesPage() {
       })
       if (result.ok) setOpen(false)
       if (result.ok) {
-        const t = allTransactions.find((x) => x.id === selectedId)
+        const t = txnItems.find((x: any) => x.id === selectedId)
+        if (selectedId) markDisputeFiled(selectedId, t)
         addActivity({
           type: "dispute",
           title: "Dispute created",
@@ -215,7 +245,7 @@ export default function DisputesPage() {
                   </div>
                   <div className="max-h-80 overflow-auto rounded-xl border border-border/60">
                     <div className="divide-y divide-border/60">
-                      {allTransactions
+                      {txnItems
                         .filter((t) => {
                           const q = query.trim().toLowerCase()
                           if (!q) return true
@@ -230,21 +260,29 @@ export default function DisputesPage() {
                         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                         .map((t) => {
                           const isSelected = selectedId === t.id
+                          const alreadyFiled = isDisputeFiled(t.id)
                           return (
                             <button
                               type="button"
                               key={t.id}
-                              onClick={() => setSelectedId(t.id)}
+                              onClick={() => !alreadyFiled && setSelectedId(t.id)}
                               className={cn(
                                 "flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-surface",
-                                isSelected
-                                  ? "bg-primary/10 text-primary"
-                                  : "hover:bg-primary/5 text-foreground"
+                                alreadyFiled
+                                  ? "bg-muted/40 text-muted-foreground cursor-not-allowed"
+                                  : isSelected
+                                    ? "bg-primary/10 text-primary"
+                                    : "hover:bg-primary/5 text-foreground"
                               )}
                             >
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
                                   <span className="truncate text-sm font-semibold">{t.merchant}</span>
+                                  {alreadyFiled && (
+                                    <span className="rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">
+                                      Filed
+                                    </span>
+                                  )}
                                   {t.status === "flagged" && (
                                     <span className="rounded-full border border-destructive/40 bg-destructive/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
                                       Flagged
@@ -326,6 +364,8 @@ export default function DisputesPage() {
         </div>
       </section>
 
+      {/* Recently Filed list removed to avoid duplication; shown in Journal below */}
+
       {createOutcome && (
         <Card className="rounded-2xl border-border/60 bg-background/95">
           <CardHeader className="pb-2">
@@ -361,7 +401,25 @@ export default function DisputesPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(loading ? [] : items).map((dispute) => {
+          {recentFiled.length === 0 && (
+            <div className="rounded-2xl border border-border/60 bg-card/90 px-5 py-6 text-sm text-muted-foreground">
+              No disputes filed yet.
+            </div>
+          )}
+          {recentFiled
+            .map((r) => ({
+              id: r.id,
+              merchant: r.data?.merchant ?? "Transaction",
+              amount: typeof r.data?.amount === "number" ? r.data.amount : 0,
+              date: r.data?.date ?? new Date(r.timestamp).toISOString(),
+              status: "filed" as const,
+              type: "Dispute",
+              description: r.data?.reason ? String(r.data.reason) : "Dispute created via app",
+              agentStatus: "completed",
+              lastUpdate: new Date(r.timestamp).toLocaleString(),
+              _filed: true,
+            }))
+            .map((dispute: any) => {
             const agentState = agentStatusCopy[dispute.agentStatus] ?? agentStatusCopy.completed
             const StatusIcon = agentState.icon
 
@@ -374,14 +432,20 @@ export default function DisputesPage() {
                   <div className="flex flex-1 flex-col gap-2">
                     <div className="flex flex-wrap items-center gap-3">
                       <h3 className="text-base font-semibold text-foreground/90">{dispute.merchant}</h3>
-                      <Badge
-                        className={cn(
-                          "rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-wide",
-                          statusStyles[dispute.status] ?? "border-primary/30 bg-primary/10 text-primary"
-                        )}
-                      >
-                        {dispute.status.replace("_", " ")}
-                      </Badge>
+                      {dispute._filed ? (
+                        <Badge className="rounded-full border border-emerald-400/30 bg-emerald-400/15 px-3 py-1 text-[0.65rem] uppercase tracking-wide text-emerald-200">
+                          Filed
+                        </Badge>
+                      ) : (
+                        <Badge
+                          className={cn(
+                            "rounded-full border px-3 py-1 text-[0.65rem] uppercase tracking-wide",
+                            statusStyles[dispute.status] ?? "border-primary/30 bg-primary/10 text-primary"
+                          )}
+                        >
+                          {String(dispute.status).replace("_", " ")}
+                        </Badge>
+                      )}
                       <Badge variant="outline" className="rounded-full border-primary/25 text-xs uppercase tracking-wide text-primary">
                         {dispute.type}
                       </Badge>
@@ -390,7 +454,16 @@ export default function DisputesPage() {
                     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground/80">
                       <span>{formatCurrency.format(dispute.amount)}</span>
                       <span className="text-muted-foreground/40">•</span>
-                      <span>{formatDate.format(new Date(dispute.date))}</span>
+                      <span>
+                        {(() => {
+                          try {
+                            const t = new Date(dispute.date as any)
+                            return isNaN(t.getTime()) ? String(dispute.date ?? "—") : formatDate.format(t)
+                          } catch {
+                            return String(dispute.date ?? "—")
+                          }
+                        })()}
+                      </span>
                       <span className="text-muted-foreground/40">•</span>
                       <span>Case #{dispute.id.padStart(4, "0")}</span>
                     </div>
