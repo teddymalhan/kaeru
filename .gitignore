@@ -7,6 +7,7 @@ amplify/functions/*/node_modules/
 .env
 .env.local
 .env.production
+.amplify
 
 # Build outputs
 .next/
