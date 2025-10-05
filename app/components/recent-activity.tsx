@@ -34,6 +34,11 @@ const statusConfig = {
     badge: "Pending",
     variant: "outline" as const,
   },
+  error: {
+    icon: XCircle,
+    badge: "Error",
+    variant: "destructive" as const,
+  },
 }
 
 export function RecentActivity() {
@@ -87,11 +92,12 @@ export function RecentActivity() {
       <CardContent>
         <div className="space-y-3">
           {activities.map((activity, i) => {
-            const config = statusConfig[activity.status as keyof typeof statusConfig]
+            const config =
+              statusConfig[activity.status as keyof typeof statusConfig] ?? statusConfig["in-progress"]
             const Icon = config.icon
 
             const TypeIcon =
-              activity.type === "dispute" ? AlertTriangle : activity.type === "cancel" ? XCircle : Phone
+              activity.type === "dispute" ? AlertTriangle : activity.type === "subscription" ? XCircle : Phone
 
             const tone =
               activity.status === "completed"
