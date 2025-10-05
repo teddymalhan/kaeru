@@ -14,7 +14,7 @@ interface AuthWrapperProps {
 
 export default function AuthWrapper({ children }: AuthWrapperProps) {
   return (
-    <Authenticator>
+    <Authenticator hideSignUp={true}>
       {({ signOut, user }) => (
         <div>
           <nav style={{ 
