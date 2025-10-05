@@ -75,7 +75,7 @@ export function SubscriptionsList() {
         <CardTitle className="flex items-center justify-between text-base font-semibold">
           <span>Active Subscriptions</span>
           <div className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs font-semibold text-muted-foreground">
-            {`$${items.reduce((sum, sub) => sum + sub.amount, 0).toFixed(2)}/mo`}
+            {`$${items.filter((s) => !isSubscriptionCancelled(s.id)).reduce((sum, sub) => sum + sub.amount, 0).toFixed(2)}/mo`}
           </div>
         </CardTitle>
         <p className="text-sm text-muted-foreground">Track recurring spend and proactively cancel stale services.</p>
@@ -90,12 +90,19 @@ export function SubscriptionsList() {
               <div className="flex-1">
                 <div className="mb-1 flex items-center gap-2">
                   <p className="font-medium text-sm">{subscription.name}</p>
-                  {subscription.status === "cancelling" && (
+                  {((outcomes[subscription.id]?.ok) || isSubscriptionCancelled(subscription.id)) ? (
                     <Badge
                       variant="outline"
-                      className="rounded-full border border-destructive/20 bg-destructive/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-destructive"
+                      className="rounded-full border border-destructive/40 bg-destructive/15 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-destructive"
                     >
-                      Cancelling
+                      Cancelled
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[0.65rem] uppercase tracking-wide text-primary"
+                    >
+                      Active
                     </Badge>
                   )}
                 </div>
@@ -116,7 +123,7 @@ export function SubscriptionsList() {
                     size="icon"
                     className={cn(
                       "rounded-full border-border/60",
-                      (subscription.status === "cancelling" || outcomes[subscription.id]?.ok) && "opacity-50"
+                      outcomes[subscription.id]?.ok && "opacity-50"
                     )}
                     onClick={() => handleCancel(subscription)}
                     disabled={loadingId === subscription.id || !!outcomes[subscription.id]?.ok}

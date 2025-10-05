@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
+import { Button } from "@/app/components/ui/button"
 import { Badge } from "@/app/components/ui/badge"
 import { Phone, CheckCircle2, Clock, XCircle, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -43,6 +44,7 @@ const statusConfig = {
 
 export function RecentActivity() {
   const [activities, setActivities] = useState<Activity[]>([])
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     // Prefer live activity captured in the app; fall back to seed endpoint
@@ -84,14 +86,26 @@ export function RecentActivity() {
   return (
     <Card>
       <CardHeader className="space-y-1">
-        <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
+          {activities.length > 5 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full px-3"
+              onClick={() => setShowAll((v) => !v)}
+            >
+              {showAll ? "Collapse" : "View All"}
+            </Button>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground">
           Live chronicle of agent interventions across calls, disputes, and workflows.
         </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {activities.map((activity, i) => {
+          {(showAll ? activities : activities.slice(0, 5)).map((activity, i) => {
             const config =
               statusConfig[activity.status as keyof typeof statusConfig] ?? statusConfig["in-progress"]
             const Icon = config.icon
