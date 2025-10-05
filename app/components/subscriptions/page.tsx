@@ -121,14 +121,6 @@ export default function SubscriptionsPage() {
                 Capture every renewal, forecast spend, and pause wasteful contracts in one luminous workspace.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button size="lg" className="rounded-full px-6">
-                Launch Optimization
-              </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-6">
-                Share Summary
-              </Button>
-            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -105,9 +105,6 @@ export default function AgentPage() {
                 <PlayCircle className="mr-2 h-4 w-4" />
                 Start session
               </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-6">
-                Share pulse
-              </Button>
             </div>
           </div>
 
