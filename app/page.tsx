@@ -1,225 +1,67 @@
-"use client";
+import { AgentStatus } from "./components/agent-status"
+import { FraudAlerts } from "./components/fraud-alerts"
+import { RecentActivity } from "./components/recent-activity"
+import { QuickActions } from "./components/quick-actions"
+import { TransactionsList } from "./components/transactions-list"
+import { SubscriptionsList } from "./components/subscriptions-list"
+import { Button } from "./components/ui/button"
 
-import { useState, useEffect } from "react";
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-import Link from "next/link";
-import PlaidLink from "./components/PlaidLink";
-import FraudDetectionPanel from "./components/FraudDetectionPanel";
-import "./app.css";
-
-// Lazily initialize Amplify Data client inside functions to avoid build-time initialization
-const getClient = () => generateClient<Schema>();
-
-export default function App() {
-  const [subscriptions, setSubscriptions] = useState<Array<Schema["DetectionItem"]["type"]>>([]);
-  const [connectedBanks, setConnectedBanks] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'subscriptions' | 'fraud-detection'>('subscriptions');
-
-  function listSubscriptions() {
-    const client = getClient();
-    client.models.DetectionItem.observeQuery().subscribe({
-      next: (data) => setSubscriptions([...data.items]),
-    });
-  }
-
-  useEffect(() => {
-    listSubscriptions();
-  }, []);
-
-  const handleBankConnected = (publicToken: string, metadata: any) => {
-    console.log('Bank connected successfully:', metadata);
-    // Add the bank to our connected banks list
-    const bankName = metadata.institution?.name || 'Connected Bank';
-    setConnectedBanks(prev => [...prev, bankName]);
-  };
-
-  async function createSubscription() {
-    const client = getClient();
-    const content = window.prompt("What subscription or service do you want to cancel?");
-    if (content) {
-      // Create a dummy transaction first (required for DetectionItem)
-      const transaction = await client.models.Transaction.create({
-        amount: 0,
-        date: new Date().toISOString().split('T')[0],
-        description: `Subscription: ${content}`,
-      });
-
-      if (transaction.data) {
-        await client.models.DetectionItem.create({
-          itemName: content,
-          subscriptionType: 'MONTHLY',
-          status: 'DETECTED',
-          transactionId: transaction.data.id,
-        });
-      }
-    }
-  }
-
-  function deleteSubscription(id: string) {
-    const client = getClient();
-    client.models.DetectionItem.delete({ id });
-  }
-
+export default function Home() {
   return (
-    <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h1>Cancel My Stuff</h1>
-          <Link href="/debug" style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: '#6c757d',
-            color: 'white',
-            textDecoration: 'none',
-            borderRadius: '4px',
-            fontSize: '0.875rem'
-          }}>
-            🔧 Debug Mode
-          </Link>
-        </div>
-        
-        {/* Tab Navigation */}
-        <div style={{ 
-          display: 'flex', 
-          gap: '1rem', 
-          marginBottom: '2rem',
-          borderBottom: '2px solid #e9ecef'
-        }}>
-          <button
-            onClick={() => setActiveTab('subscriptions')}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: activeTab === 'subscriptions' ? '#007bff' : 'transparent',
-              color: activeTab === 'subscriptions' ? 'white' : '#007bff',
-              border: 'none',
-              borderRadius: '4px 4px 0 0',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: activeTab === 'subscriptions' ? 'bold' : 'normal'
-            }}
-          >
-            📋 Subscriptions
-          </button>
-          <button
-            onClick={() => setActiveTab('fraud-detection')}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: activeTab === 'fraud-detection' ? '#007bff' : 'transparent',
-              color: activeTab === 'fraud-detection' ? 'white' : '#007bff',
-              border: 'none',
-              borderRadius: '4px 4px 0 0',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              fontWeight: activeTab === 'fraud-detection' ? 'bold' : 'normal'
-            }}
-          >
-            🛡️ Fraud Detection
-          </button>
-        </div>
-      </div>
-
-      {activeTab === 'subscriptions' && (
-        <div>
-          <p style={{ marginBottom: '2rem', color: '#666' }}>
-            Keep track of services and subscriptions you want to cancel.
-          </p>
-      
-          {/* Bank Connection Section */}
-          <PlaidLink onSuccess={handleBankConnected} />
-          
-          {/* Connected Banks Display */}
-          {connectedBanks.length > 0 && (
-            <div style={{ 
-              marginBottom: '2rem',
-              padding: '1rem',
-              backgroundColor: '#d4edda',
-              borderRadius: '4px',
-              border: '1px solid #c3e6cb'
-            }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#155724' }}>Connected Banks</h4>
-              <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
-                {connectedBanks.map((bank, index) => (
-                  <li key={index} style={{ color: '#155724' }}>🏦 {bank}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div style={{ marginBottom: '2rem' }}>
-            <button 
-              onClick={createSubscription}
-              style={{
-                padding: '0.75rem 1.5rem',
-                backgroundColor: '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '1rem'
-              }}
-            >
-              + Add Subscription to Cancel
-            </button>
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-background via-background to-primary/5 px-6 py-10 shadow-[var(--shadow-soft)] backdrop-blur-xl transition-surface motion-safe:animate-fade-up sm:px-10">
+        <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-primary/20 blur-3xl" aria-hidden />
+        <div className="absolute bottom-0 right-0 h-40 w-40 translate-y-1/3 rounded-full bg-accent/20 blur-3xl" aria-hidden />
+        <div className="relative flex flex-col gap-6 text-pretty">
+          <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
+            <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[0.7rem] font-medium tracking-[0.18em]">
+              Preview Build
+            </span>
+            <span className="hidden text-muted-foreground md:inline">Accelerate every cancellation, dispute, and refund</span>
           </div>
-
-          {subscriptions.length > 0 ? (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
-              {subscriptions.map((subscription) => (
-                <li 
-                  key={subscription.id} 
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '1rem',
-                    margin: '0.5rem 0',
-                    backgroundColor: '#f8f9fa',
-                    borderRadius: '4px',
-                    border: '1px solid #e0e0e0'
-                  }}
-                >
-                  <div>
-                    <span>{subscription.itemName}</span>
-                    <div style={{ fontSize: '0.875rem', color: '#6c757d' }}>
-                      {subscription.subscriptionType} • Status: {subscription.status}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => deleteSubscription(subscription.id)}
-                    style={{
-                      padding: '0.25rem 0.5rem',
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '0.875rem'
-                    }}
-                  >
-                    Cancelled ✓
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div style={{
-              textAlign: 'center',
-              padding: '3rem',
-              color: '#6c757d',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '8px',
-              border: '2px dashed #dee2e6'
-            }}>
-              <p>No subscriptions to cancel yet!</p>
-              <p>Add subscriptions that you want cancelled on time.</p>
-            </div>
-          )}
+          <div className="space-y-4">
+            <h1 className="text-4xl font-semibold tracking-tight text-balance md:text-5xl">
+              Your AI Financial Operations Partner
+            </h1>
+            <p className="max-w-2xl text-lg text-muted-foreground">
+              Manage cancellations, disputes, and basic customer outreach from one dashboard. Track activity,
+              see results, and export data when you need it.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size="lg">Launch Workflow</Button>
+            <Button variant="outline" size="lg">
+              View Live Activity
+            </Button>
+            <span className="text-sm text-muted-foreground/80">
+              Setup requires connecting your accounts and providers.
+            </span>
+          </div>
         </div>
-      )}
+      </section>
 
-      {activeTab === 'fraud-detection' && (
-        <FraudDetectionPanel />
-      )}
-    </main>
-  );
+      {/* Agent Status & Quick Actions */}
+      <section className="grid gap-6 md:grid-cols-2">
+        <AgentStatus />
+        <QuickActions />
+      </section>
+
+      {/* Fraud Alerts */}
+      <section className="motion-safe:animate-fade-up">
+        <FraudAlerts />
+      </section>
+
+      {/* Recent Activity */}
+      <section className="motion-safe:animate-fade-up">
+        <RecentActivity />
+      </section>
+
+      {/* Transactions & Subscriptions */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <TransactionsList />
+        <SubscriptionsList />
+      </section>
+    </div>
+  )
 }
