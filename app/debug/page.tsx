@@ -9,11 +9,18 @@ import "./../../app/app.css";
 const client = generateClient<Schema>();
 
 export default function DebugPage() {
-  const [activeTab, setActiveTab] = useState<'transactions' | 'detections' | 'artifacts'>('transactions');
+  const [activeTab, setActiveTab] = useState<'transactions' | 'detections' | 'artifacts' | 'ingestion'>('transactions');
   const [transactions, setTransactions] = useState<Array<Schema["Transaction"]["type"]>>([]);
   const [detectionItems, setDetectionItems] = useState<Array<Schema["DetectionItem"]["type"]>>([]);
   const [artifacts, setArtifacts] = useState<Array<Schema["Artifact"]["type"]>>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+
+  // Data Ingestion state
+  const [webhookResponse, setWebhookResponse] = useState<string>('');
+  const [webhookLoading, setWebhookLoading] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [selectedWebhookType, setSelectedWebhookType] = useState<'sync' | 'initial' | 'historical'>('sync');
+  const [customItemId, setCustomItemId] = useState('test_item_123');
 
   // Transaction form state
   const [transactionForm, setTransactionForm] = useState({
@@ -165,6 +172,134 @@ export default function DebugPage() {
     await client.models.Artifact.delete({ id });
   }
 
+  // Data Ingestion functions
+  const getSampleWebhookPayloads = () => ({
+    sync: {
+      webhook_type: "TRANSACTIONS",
+      webhook_code: "SYNC_UPDATES_AVAILABLE", 
+      item_id: customItemId,
+      initial_update_complete: true,
+      historical_update_complete: false,
+      environment: "sandbox"
+    },
+    initial: {
+      webhook_type: "TRANSACTIONS", 
+      webhook_code: "INITIAL_UPDATE",
+      item_id: customItemId,
+      error: null,
+      new_transactions: 25,
+      environment: "sandbox"
+    },
+    historical: {
+      webhook_type: "TRANSACTIONS",
+      webhook_code: "HISTORICAL_UPDATE", 
+      item_id: customItemId,
+      error: null,
+      new_transactions: 1500,
+      environment: "sandbox"
+    }
+  });
+
+  async function loadWebhookUrlFromOutputs() {
+    try {
+      setWebhookLoading(true);
+      setWebhookResponse('Attempting to load webhook URL from Amplify outputs...');
+      
+      // Try to load from amplify_outputs.json
+      const response = await fetch('/amplify_outputs.json');
+      if (response.ok) {
+        const outputs = await response.json();
+        const webhookUrl = outputs?.custom?.ingestTransactionsWebhookUrl;
+        
+        if (webhookUrl) {
+          setWebhookUrl(webhookUrl);
+          setWebhookResponse(`✅ Loaded webhook URL: ${webhookUrl}`);
+        } else {
+          setWebhookResponse('⚠️ Webhook URL not found in amplify_outputs.json. You may need to redeploy or check your backend configuration.');
+        }
+      } else {
+        setWebhookResponse('⚠️ Could not load amplify_outputs.json. File may not exist or be accessible.');
+      }
+    } catch (error: any) {
+      setWebhookResponse(`❌ Error loading webhook URL: ${error.message}`);
+    } finally {
+      setWebhookLoading(false);
+    }
+  }
+
+  async function testWebhookEndpoint() {
+    if (!webhookUrl) {
+      setWebhookResponse('Please enter a webhook URL first');
+      return;
+    }
+
+    setWebhookLoading(true);
+    setWebhookResponse('Sending webhook request...');
+
+    try {
+      const payload = getSampleWebhookPayloads()[selectedWebhookType];
+      
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'plaid-verification': 'test_signature'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const responseText = await response.text();
+      const status = response.status;
+      
+      setWebhookResponse(`
+Status: ${status} ${response.statusText}
+Response: ${responseText}
+
+Sent Payload:
+${JSON.stringify(payload, null, 2)}
+      `.trim());
+      
+    } catch (error: any) {
+      setWebhookResponse(`Error: ${error.message}`);
+    } finally {
+      setWebhookLoading(false);
+    }
+  }
+
+  async function testEndpointHealth() {
+    if (!webhookUrl) {
+      setWebhookResponse('Please enter a webhook URL first');
+      return;
+    }
+
+    setWebhookLoading(true);
+    setWebhookResponse('Checking endpoint health...');
+
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ test: 'health_check' })
+      });
+
+      const responseText = await response.text();
+      
+      setWebhookResponse(`
+Health Check Results:
+Status: ${response.status} ${response.statusText}
+Response: ${responseText}
+Endpoint is ${response.status < 500 ? 'responding' : 'having issues'}
+      `.trim());
+      
+    } catch (error: any) {
+      setWebhookResponse(`Health Check Failed: ${error.message}`);
+    } finally {
+      setWebhookLoading(false);
+    }
+  }
+
   const tabStyle = (isActive: boolean) => ({
     padding: '0.75rem 1.5rem',
     backgroundColor: isActive ? '#007bff' : '#f8f9fa',
@@ -224,6 +359,7 @@ export default function DebugPage() {
             <li>Create a <strong>Detection Item</strong> linked to that transaction (e.g., Netflix subscription detected)</li>
             <li>Create an <strong>Artifact</strong> linked to either (e.g., screenshot of cancellation page)</li>
             <li>Use "View Details" on transactions to see the relationships in action!</li>
+            <li><strong>NEW:</strong> Test the <strong>Data Ingestion</strong> tab to simulate Plaid webhook processing</li>
           </ol>
         </div>
 
@@ -252,6 +388,9 @@ export default function DebugPage() {
         </button>
         <button onClick={() => setActiveTab('artifacts')} style={tabStyle(activeTab === 'artifacts')}>
           Artifacts ({artifacts.length})
+        </button>
+        <button onClick={() => setActiveTab('ingestion')} style={tabStyle(activeTab === 'ingestion')}>
+          📥 Data Ingestion
         </button>
       </div>
 
@@ -665,6 +804,206 @@ export default function DebugPage() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Data Ingestion Tab */}
+      {activeTab === 'ingestion' && (
+        <div>
+          <h2>📥 Data Ingestion Testing</h2>
+          <p>Test the transaction ingestion pipeline and webhook endpoints.</p>
+          
+          {/* Webhook URL Configuration */}
+          <div style={formStyle}>
+            <h3>Webhook Endpoint Configuration</h3>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                Webhook URL:
+              </label>
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <input
+                  type="url"
+                  placeholder="Enter your ingestTransactions webhook URL"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  style={{
+                    ...inputStyle,
+                    flex: 1,
+                    fontFamily: 'monospace',
+                    fontSize: '0.9rem'
+                  }}
+                />
+                <button
+                  onClick={loadWebhookUrlFromOutputs}
+                  disabled={webhookLoading}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#6f42c1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: webhookLoading ? 'not-allowed' : 'pointer',
+                    opacity: webhookLoading ? 0.6 : 1,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Auto-Load
+                </button>
+              </div>
+              <small style={{ color: '#6c757d', fontSize: '0.875rem', display: 'block' }}>
+                Click "Auto-Load" to get URL from amplify_outputs.json, or paste manually. Format: https://[function-url].lambda-url.[region].on.aws/
+              </small>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                Custom Item ID (for testing):
+              </label>
+              <input
+                type="text"
+                placeholder="test_item_123"
+                value={customItemId}
+                onChange={(e) => setCustomItemId(e.target.value)}
+                style={inputStyle}
+              />
+              <small style={{ color: '#6c757d', fontSize: '0.875rem', display: 'block', marginTop: '0.25rem' }}>
+                This ID will be used in webhook payloads. Use different IDs to test different scenarios.
+              </small>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                onClick={testEndpointHealth}
+                disabled={webhookLoading || !webhookUrl}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#17a2b8',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: webhookLoading || !webhookUrl ? 'not-allowed' : 'pointer',
+                  opacity: webhookLoading || !webhookUrl ? 0.6 : 1
+                }}
+              >
+                {webhookLoading ? 'Testing...' : 'Test Health'}
+              </button>
+            </div>
+          </div>
+
+          {/* Webhook Testing */}
+          <div style={formStyle}>
+            <h3>Send Test Webhook</h3>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                Webhook Type:
+              </label>
+              <select
+                value={selectedWebhookType}
+                onChange={(e) => setSelectedWebhookType(e.target.value as any)}
+                style={inputStyle}
+              >
+                <option value="sync">SYNC_UPDATES_AVAILABLE (Most Common)</option>
+                <option value="initial">INITIAL_UPDATE (First 30 days)</option>
+                <option value="historical">HISTORICAL_UPDATE (Full history)</option>
+              </select>
+            </div>
+
+            <div style={{ marginBottom: '1rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0' }}>Preview Payload:</h4>
+              <pre style={{ 
+                margin: 0, 
+                fontSize: '0.8rem', 
+                overflow: 'auto',
+                backgroundColor: '#ffffff',
+                padding: '0.5rem',
+                borderRadius: '4px',
+                border: '1px solid #dee2e6'
+              }}>
+                {JSON.stringify(getSampleWebhookPayloads()[selectedWebhookType], null, 2)}
+              </pre>
+            </div>
+
+            <button
+              onClick={testWebhookEndpoint}
+              disabled={webhookLoading || !webhookUrl}
+              style={{
+                padding: '0.75rem 1.5rem',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: webhookLoading || !webhookUrl ? 'not-allowed' : 'pointer',
+                opacity: webhookLoading || !webhookUrl ? 0.6 : 1
+              }}
+            >
+              {webhookLoading ? 'Sending...' : 'Send Webhook'}
+            </button>
+          </div>
+
+          {/* Response Display */}
+          {webhookResponse && (
+            <div style={{
+              marginTop: '2rem',
+              padding: '1.5rem',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '4px',
+              border: '1px solid #dee2e6'
+            }}>
+              <h3>Response</h3>
+              <pre style={{
+                margin: 0,
+                fontSize: '0.875rem',
+                overflow: 'auto',
+                backgroundColor: '#ffffff',
+                padding: '1rem',
+                borderRadius: '4px',
+                border: '1px solid #dee2e6',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}>
+                {webhookResponse}
+              </pre>
+            </div>
+          )}
+
+          {/* Instructions */}
+          <div style={{
+            marginTop: '2rem',
+            padding: '1.5rem',
+            backgroundColor: '#d4edda',
+            borderRadius: '4px',
+            border: '1px solid #c3e6cb'
+          }}>
+            <h3>🔧 How to Test Data Ingestion:</h3>
+            <ol style={{ marginLeft: '1.5rem' }}>
+              <li><strong>Get Webhook URL:</strong> Find your function URL in the Amplify outputs or AWS Console</li>
+              <li><strong>Test Health:</strong> Click "Test Health" to verify the endpoint is responding</li>
+              <li><strong>Send Webhook:</strong> Choose a webhook type and send a test payload</li>
+              <li><strong>Check Response:</strong> Review the response to see if the function processed correctly</li>
+              <li><strong>Verify Data:</strong> Check the Transactions tab to see if any new data appeared</li>
+            </ol>
+            
+            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#fff3cd', borderRadius: '4px' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0' }}>⚠️ Important Notes:</h4>
+              <ul style={{ marginLeft: '1.5rem', marginBottom: 0 }}>
+                <li>The function requires proper Plaid credentials to work fully</li>
+                <li>Without a real access token, it will return configuration errors</li>
+                <li>This testing interface helps verify webhook processing and error handling</li>
+                <li>Real transaction data requires actual Plaid integration setup</li>
+              </ul>
+            </div>
+
+            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#e7f3ff', borderRadius: '4px' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0' }}>🚀 Quick Test Scenarios:</h4>
+              <ul style={{ marginLeft: '1.5rem', marginBottom: 0 }}>
+                <li><strong>Basic Health Check:</strong> Test endpoint responsiveness without valid payload</li>
+                <li><strong>SYNC_UPDATES_AVAILABLE:</strong> Most common webhook - tests transaction sync processing</li>
+                <li><strong>INITIAL_UPDATE:</strong> Tests handling of first 30 days of transaction history</li>
+                <li><strong>HISTORICAL_UPDATE:</strong> Tests processing of full transaction history</li>
+                <li><strong>Different Item IDs:</strong> Change the item ID to test different user scenarios</li>
+              </ul>
+            </div>
           </div>
         </div>
       )}
