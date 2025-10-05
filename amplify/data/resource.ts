@@ -51,7 +51,7 @@ const schema = a.schema({
     .model({
       itemName: a.string().required(),
       subscriptionType: a.enum(["MONTHLY", "ANNUAL", "WEEKLY", "ONE_TIME"]),
-      status: a.enum(["DETECTED", "CONFIRMED", "CANCELLED", "IGNORED"]),
+      status: a.enum(["DETECTED", "CONFIRMED", "CANCELLED", "IGNORED", "IN_PROGRESS", "FOLLOW_UP_REQUIRED", "COMPLETED"]),
       detectedAmount: a.float(),
       confidence: a.float(),
       cancellationDate: a.date(),

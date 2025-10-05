@@ -3,14 +3,16 @@
 import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
+import { Badge } from "@/app/components/ui/badge"
 import type { LucideIcon } from "lucide-react"
-import { Phone, XCircle, AlertTriangle, Search } from "lucide-react"
+import { Phone, XCircle, AlertTriangle, Search, Loader2 } from "lucide-react"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { addActivity } from "@/app/lib/activity"
 import { markSubscriptionCancelled } from "@/app/lib/subscriptions-store"
 import { isDisputeFiled, markDisputeFiled } from "@/app/lib/disputes-store"
+import { useDetectionItemPolling, getStatusDisplayText, getStatusColor } from "@/app/lib/use-detection-item-polling"
 import {
   Dialog,
   DialogContent,
@@ -25,6 +27,7 @@ type QuickAction = {
   label: string
   icon: LucideIcon
   perform: () => Promise<ApiResult<unknown>>
+  detectionItemId?: string
 }
 
 type ActionOutcome = {
@@ -46,6 +49,14 @@ export function QuickActions() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [creatingDispute, setCreatingDispute] = useState(false)
   const [txnItems, setTxnItems] = useState<any[]>([])
+  const [activeDetectionItemId, setActiveDetectionItemId] = useState<string | null>(null)
+
+  // Polling for the active detection item
+  const pollingState = useDetectionItemPolling({
+    detectionItemId: activeDetectionItemId || '',
+    enabled: !!activeDetectionItemId,
+    pollInterval: 2000
+  })
 
   // Load transactions for the selector
   useEffect(() => {
@@ -68,11 +79,16 @@ export function QuickActions() {
       icon: Phone,
       perform: () =>
         postJson({
-          endpoint: "/api/actHandler",
+          endpoint: "/api/cancelViaVapi",
           body: {
-            action: "cancel",
-            detectionItemId: randomId("act"),
+            detectionItemId: randomId("vapi"),
             userId: "user456",
+            metadata: {
+              merchant: "Netflix",
+              amount: 15.99,
+              date: new Date().toISOString().slice(0, 10),
+              accountLast4: "1234",
+            },
           },
         }),
     },
@@ -127,6 +143,14 @@ export function QuickActions() {
 
       try {
         const result = await action.perform()
+
+        // Start polling for VAPI actions
+        if (action.key === "make-call" && result.ok && result.data) {
+          const detectionItemId = (result.data as any)?.detectionItemId;
+          if (detectionItemId) {
+            setActiveDetectionItemId(detectionItemId);
+          }
+        }
 
         setOutcomes((prev) => ({
           ...prev,
@@ -361,7 +385,73 @@ export function QuickActions() {
           </DialogContent>
         </Dialog>
 
-        {/* Outcome section removed per request to hide mock responses */}
+        {/* Status polling display */}
+        {activeDetectionItemId && (
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Monitoring VAPI call status...
+            </div>
+            
+            {pollingState.detectionItem && (
+              <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">
+                      {pollingState.detectionItem.itemName}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      ID: {pollingState.detectionItem.id}
+                    </div>
+                  </div>
+                  <Badge 
+                    className={cn(
+                      "rounded-full px-2 py-1 text-xs font-medium",
+                      getStatusColor(pollingState.detectionItem.status)
+                    )}
+                  >
+                    {getStatusDisplayText(pollingState.detectionItem.status)}
+                  </Badge>
+                </div>
+                
+                {pollingState.detectionItem.status === "COMPLETED" && (
+                  <div className="mt-2 text-xs text-green-600 dark:text-green-400">
+                    ✅ Cancellation completed successfully
+                  </div>
+                )}
+                
+                {pollingState.detectionItem.status === "FOLLOW_UP_REQUIRED" && (
+                  <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                    ⚠️ Follow-up required - provider needs manual intervention
+                  </div>
+                )}
+                
+                {pollingState.detectionItem.status === "IN_PROGRESS" && (
+                  <div className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+                    🔄 Call in progress...
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {pollingState.error && (
+              <div className="rounded-lg border border-red-300 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  ❌ Polling error: {pollingState.error}
+                </div>
+              </div>
+            )}
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveDetectionItemId(null)}
+              className="w-full"
+            >
+              Stop Monitoring
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

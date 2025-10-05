@@ -9,6 +9,8 @@ import { AlertTriangle } from "lucide-react"
 import { postJson } from "@/app/lib/api-client"
 import { addActivity } from "@/app/lib/activity"
 import { isDisputeFiled, markDisputeFiled } from "@/app/lib/disputes-store"
+import { useDetectionItemPolling, getStatusDisplayText, getStatusColor } from "@/app/lib/use-detection-item-polling"
+import { cn } from "@/lib/utils"
 
 type Alert = { id: number; merchant: string; amount: string; date: string; confidence: string; reason: string }
 
@@ -16,6 +18,14 @@ export function FraudAlerts() {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [loadingId, setLoadingId] = useState<number | null>(null)
   const [outcomes, setOutcomes] = useState<Record<number, { ok: boolean; status: number } | undefined>>({})
+  const [activeDetectionItemId, setActiveDetectionItemId] = useState<string | null>(null)
+
+  // Polling for the active detection item
+  const pollingState = useDetectionItemPolling({
+    detectionItemId: activeDetectionItemId || '',
+    enabled: !!activeDetectionItemId,
+    pollInterval: 2000
+  })
   useEffect(() => {
     ;(async () => {
       try {
@@ -39,17 +49,47 @@ export function FraudAlerts() {
     if (loadingId !== null) return
     setLoadingId(alert.id)
     try {
+      // First create a DetectionItem in the database
+      const createResponse = await fetch('/api/detection-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemName: `${alert.merchant} - Dispute`,
+          subscriptionType: "ONE_TIME",
+          status: "DETECTED",
+          detectedAmount: parseFloat(alert.amount.replace('$', '')),
+          confidence: 0.95,
+          notes: `Fraud alert dispute: ${alert.reason}`,
+          metadata: alert
+        })
+      });
+
+      const createdItem = await createResponse.json();
+
+      if (!createResponse.ok || !createdItem.id) {
+        throw new Error('Failed to create DetectionItem');
+      }
+
+      // Now call the actHandler with the real DetectionItem ID
       const res = await postJson({
         endpoint: "/api/actHandler",
         body: {
           action: "dispute",
-          detectionItemId: String(alert.id),
+          detectionItemId: createdItem.id,
           userId: "user456",
-          metadata: alert,
+          metadata: { ...alert, detectionItemId: createdItem.id },
         },
       })
+      
+      // Start polling for dispute status
+      if (res.ok) {
+        setActiveDetectionItemId(createdItem.id);
+        markDisputeFiled(alert.id, alert)
+      }
+      
       setOutcomes((prev) => ({ ...prev, [alert.id]: { ok: res.ok, status: res.status } }))
-      if (res.ok) markDisputeFiled(alert.id, alert)
       addActivity({
         type: "dispute",
         title: res.ok ? "Dispute created" : "Dispute failed",
@@ -57,7 +97,8 @@ export function FraudAlerts() {
         status: res.ok ? "completed" : "error",
         data: alert,
       })
-    } catch {
+    } catch (error) {
+      console.error('Dispute creation failed:', error);
       setOutcomes((prev) => ({ ...prev, [alert.id]: { ok: false, status: 0 } }))
       addActivity({
         type: "dispute",
@@ -91,15 +132,26 @@ export function FraudAlerts() {
             className="flex items-start justify-between gap-4 rounded-2xl border border-border/60 bg-background/70 px-4 py-4 transition-surface hover:border-amber-300/60 hover:bg-amber-100/20 dark:hover:border-amber-400/40"
           >
             <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold text-foreground/90">{alert.merchant}</p>
-                <Badge
-                  variant={alert.confidence === "High" ? "destructive" : "secondary"}
-                  className="rounded-full px-2 py-0.5 text-[0.65rem] uppercase tracking-wide"
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-foreground/90">{alert.merchant}</p>
+              <Badge
+                variant={alert.confidence === "High" ? "destructive" : "secondary"}
+                className="rounded-full px-2 py-0.5 text-[0.65rem] uppercase tracking-wide"
+              >
+                {alert.confidence} Risk
+              </Badge>
+              {/* Show DetectionItem status if being polled */}
+              {activeDetectionItemId === String(alert.id) && pollingState.detectionItem && (
+                <Badge 
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[0.65rem] font-medium",
+                    getStatusColor(pollingState.detectionItem.status)
+                  )}
                 >
-                  {alert.confidence} Risk
+                  {getStatusDisplayText(pollingState.detectionItem.status)}
                 </Badge>
-              </div>
+              )}
+            </div>
               <p className="text-sm text-muted-foreground">{alert.reason}</p>
               <p className="text-xs text-muted-foreground/80">{alert.date}</p>
             </div>

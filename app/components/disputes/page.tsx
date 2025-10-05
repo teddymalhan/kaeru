@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
-import { CheckCircle2, Clock, FileText, Phone, Plus, Search, ShieldAlert, XOctagon } from "lucide-react"
+import { CheckCircle2, Clock, FileText, Phone, Plus, Search, ShieldAlert, XOctagon, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
 import { addActivity } from "@/app/lib/activity"
 import { getFiledMap, isDisputeFiled, markDisputeFiled } from "@/app/lib/disputes-store"
+import { useDetectionItemPolling, getStatusDisplayText, getStatusColor } from "@/app/lib/use-detection-item-polling"
 import {
   Dialog,
   DialogContent,
@@ -88,8 +89,17 @@ export default function DisputesPage() {
     | { status: "success" | "error"; httpStatus: number; timestamp: number; payload: unknown | null; error: unknown | null }
     | null
   >(null)
+  const [activeCallDisputeId, setActiveCallDisputeId] = useState<string | null>(null)
+  const [callingId, setCallingId] = useState<string | null>(null)
 
   const randomId = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+
+  // Polling for the active dispute call
+  const pollingState = useDetectionItemPolling({
+    detectionItemId: activeCallDisputeId || '',
+    enabled: !!activeCallDisputeId,
+    pollInterval: 2000
+  })
 
   useEffect(() => {
     let mounted = true
@@ -199,6 +209,77 @@ export default function DisputesPage() {
       setCreating(false)
     }
   }, [creating, selectedId])
+
+  const handleDisputeCall = useCallback(async (dispute: any) => {
+    if (callingId !== null) return
+    setCallingId(dispute.id)
+    try {
+      // First create a DetectionItem in the database
+      const createResponse = await fetch('/api/detection-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemName: `${dispute.merchant} - Dispute Call`,
+          subscriptionType: "ONE_TIME",
+          status: "DETECTED",
+          detectedAmount: dispute.amount,
+          confidence: 0.95,
+          notes: `Dispute call for ${dispute.merchant}`,
+          metadata: dispute
+        })
+      });
+
+      const createdItem = await createResponse.json();
+
+      if (!createResponse.ok || !createdItem.id) {
+        throw new Error('Failed to create DetectionItem');
+      }
+
+      // Now call the cancelViaVapi endpoint for dispute calls
+      const res = await postJson({
+        endpoint: "/api/cancelViaVapi",
+        body: {
+          detectionItemId: createdItem.id,
+          userId: "user456",
+          metadata: { 
+            ...dispute, 
+            detectionItemId: createdItem.id,
+            merchant: dispute.merchant,
+            amount: dispute.amount,
+            accountLast4: "1234",
+            callType: "dispute",
+            disputeReason: dispute.description || "Dispute created via app"
+          },
+        },
+      })
+      
+      // Start polling for dispute status
+      if (res.ok) {
+        setActiveCallDisputeId(createdItem.id);
+      }
+
+      addActivity({
+        type: "dispute",
+        title: res.ok ? "Dispute call initiated" : "Dispute call failed",
+        description: `${dispute.merchant} (${formatCurrency.format(dispute.amount)})`,
+        status: res.ok ? "completed" : "error",
+        data: dispute,
+      })
+    } catch (error) {
+      console.error('Dispute call failed:', error);
+      addActivity({
+        type: "dispute",
+        title: "Dispute call failed",
+        description: `${dispute.merchant} (${formatCurrency.format(dispute.amount)})`,
+        status: "error",
+        data: dispute,
+      })
+    } finally {
+      setCallingId(null)
+    }
+  }, [callingId])
   return (
     <div className="space-y-8">
       <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-background via-background to-destructive/10 px-6 py-10 shadow-[var(--shadow-soft)] backdrop-blur-xl transition-surface motion-safe:animate-fade-up sm:px-10">
@@ -402,11 +483,23 @@ export default function DisputesPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" className="rounded-full px-4">
-                      View Timeline
-                    </Button>
-                    <Button size="sm" className="rounded-full px-4">
-                      Open Workspace
+                    <Button 
+                      size="sm" 
+                      className="rounded-full px-4"
+                      onClick={() => handleDisputeCall(dispute)}
+                      disabled={callingId === dispute.id}
+                    >
+                      {callingId === dispute.id ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Calling...
+                        </>
+                      ) : (
+                        <>
+                          <Phone className="mr-2 h-4 w-4" />
+                          Call
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -415,6 +508,79 @@ export default function DisputesPage() {
           })}
         </CardContent>
       </Card>
+
+      {/* Polling Status Display */}
+      {activeCallDisputeId && (
+        <Card className="rounded-3xl border-border/60 bg-background/95">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold">Dispute Call Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Monitoring dispute call status...
+            </div>
+
+            {pollingState.detectionItem && (
+              <div className="rounded-lg border border-border/60 bg-background/70 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium">
+                      {pollingState.detectionItem.itemName}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      ID: {pollingState.detectionItem.id}
+                    </div>
+                  </div>
+                  <Badge
+                    className={cn(
+                      "rounded-full px-2 py-1 text-xs font-medium",
+                      getStatusColor(pollingState.detectionItem.status)
+                    )}
+                  >
+                    {getStatusDisplayText(pollingState.detectionItem.status)}
+                  </Badge>
+                </div>
+
+                {pollingState.detectionItem.status === "COMPLETED" && (
+                  <div className="mt-2 text-xs text-green-600 dark:text-green-400">
+                    ✅ Dispute call completed successfully
+                  </div>
+                )}
+
+                {pollingState.detectionItem.status === "FOLLOW_UP_REQUIRED" && (
+                  <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                    ⚠️ Follow-up required - provider needs manual intervention
+                  </div>
+                )}
+
+                {pollingState.detectionItem.status === "IN_PROGRESS" && (
+                  <div className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+                    🔄 Call in progress...
+                  </div>
+                )}
+              </div>
+            )}
+
+            {pollingState.error && (
+              <div className="rounded-lg border border-red-300 bg-red-50 p-3 dark:border-red-800 dark:bg-red-950">
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  ❌ Polling error: {pollingState.error}
+                </div>
+              </div>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveCallDisputeId(null)}
+              className="w-full"
+            >
+              Stop Monitoring
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
