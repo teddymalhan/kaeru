@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "@/amplify/data/resource";
 import Link from "next/link";
+import PlaidLink from "./components/PlaidLink";
 import "./../app/app.css";
 
 const client = generateClient<Schema>();
 
 export default function App() {
   const [subscriptions, setSubscriptions] = useState<Array<Schema["DetectionItem"]["type"]>>([]);
+  const [connectedBanks, setConnectedBanks] = useState<string[]>([]);
 
   function listSubscriptions() {
     client.models.DetectionItem.observeQuery().subscribe({
@@ -20,6 +22,13 @@ export default function App() {
   useEffect(() => {
     listSubscriptions();
   }, []);
+
+  const handleBankConnected = (publicToken: string, metadata: any) => {
+    console.log('Bank connected successfully:', metadata);
+    // Add the bank to our connected banks list
+    const bankName = metadata.institution?.name || 'Connected Bank';
+    setConnectedBanks(prev => [...prev, bankName]);
+  };
 
   async function createSubscription() {
     const content = window.prompt("What subscription or service do you want to cancel?");
@@ -65,6 +74,27 @@ export default function App() {
         <p>Keep track of services and subscriptions you want to cancel.</p>
       </div>
       
+      {/* Bank Connection Section */}
+      <PlaidLink onSuccess={handleBankConnected} />
+      
+      {/* Connected Banks Display */}
+      {connectedBanks.length > 0 && (
+        <div style={{ 
+          marginBottom: '2rem',
+          padding: '1rem',
+          backgroundColor: '#d4edda',
+          borderRadius: '4px',
+          border: '1px solid #c3e6cb'
+        }}>
+          <h4 style={{ margin: '0 0 0.5rem 0', color: '#155724' }}>Connected Banks</h4>
+          <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
+            {connectedBanks.map((bank, index) => (
+              <li key={index} style={{ color: '#155724' }}>🏦 {bank}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div style={{ marginBottom: '2rem' }}>
         <button 
           onClick={createSubscription}
