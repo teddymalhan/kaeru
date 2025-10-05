@@ -1,5 +1,6 @@
 "use client"
 
+import { Shield, Bell, Settings, User, Plus } from "lucide-react";
 import { Navbar } from "./components/navbar";
 import { Stats } from "./components/Stats";
 import { AgentStatus } from "./components/AgentStatus";
