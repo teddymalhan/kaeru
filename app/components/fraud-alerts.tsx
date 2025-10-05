@@ -6,11 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/ca
 import { Badge } from "@/app/components/ui/badge"
 import { Button } from "@/app/components/ui/button"
 import { AlertTriangle } from "lucide-react"
+import { postJson } from "@/app/lib/api-client"
+import { addActivity } from "@/app/lib/activity"
 
 type Alert = { id: number; merchant: string; amount: string; date: string; confidence: string; reason: string }
 
 export function FraudAlerts() {
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [loadingId, setLoadingId] = useState<number | null>(null)
+  const [outcomes, setOutcomes] = useState<Record<number, { ok: boolean; status: number } | undefined>>({})
   useEffect(() => {
     ;(async () => {
       try {
@@ -22,6 +26,40 @@ export function FraudAlerts() {
       }
     })()
   }, [])
+  const handleDispute = async (alert: Alert) => {
+    if (loadingId !== null) return
+    setLoadingId(alert.id)
+    try {
+      const res = await postJson({
+        endpoint: "/api/actHandler",
+        body: {
+          action: "dispute",
+          detectionItemId: String(alert.id),
+          userId: "user456",
+          metadata: alert,
+        },
+      })
+      setOutcomes((prev) => ({ ...prev, [alert.id]: { ok: res.ok, status: res.status } }))
+      addActivity({
+        type: "dispute",
+        title: res.ok ? "Dispute created" : "Dispute failed",
+        description: `${alert.merchant} (${alert.amount})`,
+        status: res.ok ? "completed" : "error",
+        data: alert,
+      })
+    } catch {
+      setOutcomes((prev) => ({ ...prev, [alert.id]: { ok: false, status: 0 } }))
+      addActivity({
+        type: "dispute",
+        title: "Dispute failed",
+        description: `${alert.merchant} (${alert.amount})`,
+        status: "error",
+        data: alert,
+      })
+    } finally {
+      setLoadingId(null)
+    }
+  }
   return (
     <Card className="border border-border/60 bg-gradient-to-br from-background via-background to-amber-100/10">
       <CardHeader className="flex flex-col gap-2">
@@ -57,9 +95,29 @@ export function FraudAlerts() {
             </div>
             <div className="flex flex-col items-end gap-2">
               <p className="text-lg font-semibold text-foreground">{alert.amount}</p>
-              <Button size="sm" variant="outline" className="rounded-full px-4">
-                Dispute
-              </Button>
+              <div className="flex items-center gap-2">
+                {outcomes[alert.id] && (
+                  <span
+                    className={
+                      outcomes[alert.id]?.ok
+                        ? "text-emerald-500 text-xs font-semibold"
+                        : "text-destructive text-xs font-semibold"
+                    }
+                  >
+                    {outcomes[alert.id]?.ok ? "Filed" : `Error (${outcomes[alert.id]?.status})`}
+                  </span>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full px-4"
+                  onClick={() => handleDispute(alert)}
+                  disabled={loadingId === alert.id}
+                  aria-busy={loadingId === alert.id}
+                >
+                  {loadingId === alert.id ? "Working…" : "Dispute"}
+                </Button>
+              </div>
             </div>
           </div>
         ))}
