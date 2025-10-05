@@ -18,7 +18,7 @@ const schema = a.schema({
       detectionItems: a.hasMany("DetectionItem", "transactionId"),
       artifacts: a.hasMany("Artifact", "transactionId"),
     })
-    .authorization((allow) => [
+    .authorization((allow: any) => [
       allow.owner(),
       allow.publicApiKey().to(["create", "read"]),
     ]),
@@ -39,7 +39,7 @@ const schema = a.schema({
       transaction: a.belongsTo("Transaction", "transactionId"),
       artifacts: a.hasMany("Artifact", "detectionItemId"),
     })
-    .authorization((allow) => [
+    .authorization((allow: any) => [
       allow.owner().to(["create", "read", "update", "delete"]),
       allow.publicApiKey().to(["create", "read"]),
     ]),
@@ -62,7 +62,7 @@ const schema = a.schema({
       transaction: a.belongsTo("Transaction", "transactionId"),
       detectionItem: a.belongsTo("DetectionItem", "detectionItemId"),
     })
-    .authorization((allow) => [
+    .authorization((allow: any) => [
       allow.owner().to(["create", "read", "update", "delete"]),
       allow.publicApiKey().to(["create", "read"]),
     ]),

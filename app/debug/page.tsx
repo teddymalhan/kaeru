@@ -6,10 +6,23 @@ import type { Schema } from "@/amplify/data/resource";
 import Link from "next/link";
 import "./../../app/app.css";
 
+// Override global body styles for debug page
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    body {
+      height: auto !important;
+      align-items: flex-start !important;
+      justify-content: flex-start !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 const client = generateClient<Schema>();
 
 export default function DebugPage() {
-  const [activeTab, setActiveTab] = useState<'transactions' | 'detections' | 'artifacts'>('transactions');
+  const [activeTab, setActiveTab] = useState<'transactions' | 'detections' | 'artifacts' | 'lambdas'>('transactions');
   const [transactions, setTransactions] = useState<Array<Schema["Transaction"]["type"]>>([]);
   const [detectionItems, setDetectionItems] = useState<Array<Schema["DetectionItem"]["type"]>>([]);
   const [artifacts, setArtifacts] = useState<Array<Schema["Artifact"]["type"]>>([]);
@@ -42,6 +55,48 @@ export default function DebugPage() {
     artifactType: 'SCREENSHOT' as const,
     transactionId: '',
     detectionItemId: ''
+  });
+
+  // Lambda testing state
+  const [selectedDetectionItem, setSelectedDetectionItem] = useState<string | null>(null);
+  const [actHandlerForm, setActHandlerForm] = useState({
+    action: 'cancel',
+    detectionItemId: '',
+    userId: 'debug-user-123',
+    metadata: {
+      merchant: 'Netflix',
+      amount: 15.99,
+      date: new Date().toISOString().split('T')[0],
+      accountLast4: '1234'
+    }
+  });
+
+  const [cancelApiForm, setCancelApiForm] = useState({
+    detectionItemId: '',
+    userId: 'debug-user-123',
+    metadata: {
+      merchant: 'Netflix',
+      amount: 15.99,
+      date: new Date().toISOString().split('T')[0],
+      accountLast4: '1234'
+    }
+  });
+
+  const [actHandlerResponse, setActHandlerResponse] = useState<any>(null);
+  const [cancelApiResponse, setCancelApiResponse] = useState<any>(null);
+  const [cancelEmailResponse, setCancelEmailResponse] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // cancelEmail form state
+  const [cancelEmailForm, setCancelEmailForm] = useState({
+    detectionItemId: '',
+    userId: 'debug-user-123',
+    metadata: {
+      merchant: 'Netflix',
+      amount: 15.99,
+      date: new Date().toISOString().split('T')[0],
+      accountLast4: '1234'
+    }
   });
 
   // Load data
@@ -165,6 +220,72 @@ export default function DebugPage() {
     await client.models.Artifact.delete({ id });
   }
 
+  // Lambda testing functions
+  async function testActHandler() {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/actHandler', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(actHandlerForm)
+      });
+      const data = await response.json();
+      setActHandlerResponse(data);
+    } catch (error) {
+      setActHandlerResponse({ error: 'Failed to call actHandler', details: error });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function testCancelApi() {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/cancelApi', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cancelApiForm)
+      });
+      const data = await response.json();
+      setCancelApiResponse(data);
+    } catch (error) {
+      setCancelApiResponse({ error: 'Failed to call cancelApi', details: error });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function selectDetectionItemForTesting(item: Schema["DetectionItem"]["type"]) {
+    setSelectedDetectionItem(item.id);
+    setActHandlerForm(prev => ({ ...prev, detectionItemId: item.id }));
+    setCancelApiForm(prev => ({ ...prev, detectionItemId: item.id }));
+    setCancelEmailForm(prev => ({ ...prev, detectionItemId: item.id }));
+  }
+
+  // cancelEmail testing function
+  async function testCancelEmail() {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/cancelEmail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cancelEmailForm)
+      });
+      const data = await response.json();
+      setCancelEmailResponse(data);
+    } catch (error) {
+      setCancelEmailResponse({ error: 'Failed to call cancelEmail', details: error });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   const tabStyle = (isActive: boolean) => ({
     padding: '0.75rem 1.5rem',
     backgroundColor: isActive ? '#007bff' : '#f8f9fa',
@@ -193,7 +314,26 @@ export default function DebugPage() {
   };
 
   return (
-    <main style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ 
+      minHeight: '100vh', 
+      background: 'linear-gradient(180deg, rgb(117, 81, 194), rgb(255, 255, 255))',
+      padding: '0',
+      margin: '0',
+      position: 'absolute',
+      top: '0',
+      left: '0',
+      width: '100%',
+      overflow: 'auto'
+    }}>
+      <main style={{ 
+        padding: '2rem', 
+        marginTop: '6rem',
+        maxWidth: '1200px', 
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        minHeight: '100vh',
+        background: 'transparent'
+      }}>
       <div style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <h1>Cancel My Stuff - Data Models Debug</h1>
@@ -252,6 +392,9 @@ export default function DebugPage() {
         </button>
         <button onClick={() => setActiveTab('artifacts')} style={tabStyle(activeTab === 'artifacts')}>
           Artifacts ({artifacts.length})
+        </button>
+        <button onClick={() => setActiveTab('lambdas')} style={tabStyle(activeTab === 'lambdas')}>
+          Lambda Functions
         </button>
       </div>
 
@@ -668,6 +811,948 @@ export default function DebugPage() {
           </div>
         </div>
       )}
-    </main>
+
+      {/* Lambda Functions Tab */}
+      {activeTab === 'lambdas' && (
+        <div>
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{ marginBottom: '0.5rem' }}>⚡ Lambda Functions Testing</h2>
+            <p style={{ color: '#6c757d', margin: 0 }}>Test the backend Lambda functions that handle subscription cancellation and dispute workflows</p>
+          </div>
+          
+          {/* Quick Guide */}
+          <div style={{
+            padding: '1.5rem',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '8px',
+            border: '1px solid #dee2e6',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                backgroundColor: '#007bff',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '1rem'
+              }}>
+                <span style={{ color: 'white', fontSize: '20px' }}>🚀</span>
+              </div>
+              <h3 style={{ margin: 0, color: '#495057' }}>How to Test Lambda Functions</h3>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+              <div style={{ padding: '1rem', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>1. Select Detection Item</div>
+                <div style={{ fontSize: '0.875rem', color: '#6c757d' }}>Choose a subscription from your detection items to test with real data</div>
+              </div>
+              <div style={{ padding: '1rem', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>2. Test Action Handler</div>
+                <div style={{ fontSize: '0.875rem', color: '#6c757d' }}>Try cancel, dispute, or keep actions to see different workflows</div>
+              </div>
+              <div style={{ padding: '1rem', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>3. Test Merchant API</div>
+                <div style={{ fontSize: '0.875rem', color: '#6c757d' }}>Simulate API calls to different merchants with realistic success rates</div>
+              </div>
+              <div style={{ padding: '1rem', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>4. Test Email Cancellation</div>
+                <div style={{ fontSize: '0.875rem', color: '#6c757d' }}>Simulate sending emails when API calls fail</div>
+              </div>
+              <div style={{ padding: '1rem', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>5. View Results</div>
+                <div style={{ fontSize: '0.875rem', color: '#6c757d' }}>See detailed responses and understand how the system works</div>
+              </div>
+            </div>
+            
+            {/* Workflow Explanation */}
+            <div style={{ 
+              marginTop: '1.5rem', 
+              padding: '1rem', 
+              backgroundColor: '#fff3cd', 
+              borderRadius: '6px', 
+              border: '1px solid #ffeaa7' 
+            }}>
+              <h4 style={{ margin: '0 0 0.75rem 0', color: '#856404' }}>📋 Workflow: Cancel → API → Email</h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.5rem' }}>🎯</span>
+                  <span style={{ fontSize: '0.875rem', color: '#856404' }}>Action Handler</span>
+                </div>
+                <span style={{ fontSize: '1.2rem' }}>→</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.5rem' }}>🛒</span>
+                  <span style={{ fontSize: '0.875rem', color: '#856404' }}>Merchant API</span>
+                </div>
+                <span style={{ fontSize: '1.2rem' }}>→</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '1.5rem' }}>📧</span>
+                  <span style={{ fontSize: '0.875rem', color: '#856404' }}>Email Fallback</span>
+                </div>
+              </div>
+              <p style={{ margin: '0.75rem 0 0 0', fontSize: '0.875rem', color: '#856404' }}>
+                Each step has different success rates. If API fails, email is used as fallback.
+              </p>
+            </div>
+          </div>
+
+          {/* Detection Items Selection */}
+          <div style={{
+            padding: '1.5rem',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            border: '1px solid #dee2e6',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                backgroundColor: '#28a745',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '0.75rem'
+              }}>
+                <span style={{ color: 'white', fontSize: '16px' }}>📋</span>
+              </div>
+              <h3 style={{ margin: 0, color: '#495057' }}>Step 1: Choose Subscription to Test</h3>
+            </div>
+            <p style={{ margin: '0 0 1rem 0', color: '#6c757d', fontSize: '0.875rem' }}>
+              Select a subscription from your detection items. This will auto-fill the forms below with real data.
+            </p>
+            
+            {detectionItems.length > 0 ? (
+              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                {detectionItems.map((item) => (
+                  <div key={item.id} style={{
+                    padding: '1rem',
+                    backgroundColor: selectedDetectionItem === item.id ? '#e7f3ff' : '#f8f9fa',
+                    borderRadius: '8px',
+                    border: `2px solid ${selectedDetectionItem === item.id ? '#007bff' : '#dee2e6'}`,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={() => selectDetectionItemForTesting(item)}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                        {item.itemName}
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: '#6c757d', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        <span>Type: {item.subscriptionType}</span>
+                        <span>Status: {item.status}</span>
+                        <span>Amount: ${item.detectedAmount}</span>
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: selectedDetectionItem === item.id ? '#007bff' : '#6c757d',
+                      color: 'white',
+                      borderRadius: '6px',
+                      fontSize: '0.875rem',
+                      fontWeight: 'bold',
+                      minWidth: '80px',
+                      textAlign: 'center'
+                    }}>
+                      {selectedDetectionItem === item.id ? '✓ SELECTED' : 'SELECT'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                padding: '2rem',
+                textAlign: 'center',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '8px',
+                border: '2px dashed #dee2e6'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '1rem' }}>📝</div>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#495057' }}>No Detection Items Found</h4>
+                <p style={{ margin: '0 0 1rem 0', color: '#6c757d' }}>
+                  Create some detection items first to test the Lambda functions with real data.
+                </p>
+                <button 
+                  onClick={() => setActiveTab('detections')}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem'
+                  }}
+                >
+                  Go to Detection Items
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* actHandler Testing */}
+          <div style={{
+            padding: '1.5rem',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            border: '1px solid #dee2e6',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                backgroundColor: '#ffc107',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '0.75rem'
+              }}>
+                <span style={{ color: 'white', fontSize: '16px' }}>🎯</span>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, color: '#495057' }}>Step 2: Test Action Handler</h3>
+                <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.875rem' }}>
+                  This Lambda function decides what action to take on a subscription
+                </p>
+              </div>
+            </div>
+            
+            {/* Action Types */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>
+                🎭 Choose Action Type
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                {[
+                  { value: 'cancel', label: 'Cancel Subscription', description: 'Start cancellation workflow', color: '#dc3545' },
+                  { value: 'dispute', label: 'Dispute Transaction', description: 'Start dispute workflow', color: '#fd7e14' },
+                  { value: 'keep', label: 'Keep Subscription', description: 'Mark as legitimate', color: '#28a745' },
+                  { value: 'mark_legit', label: 'Mark Legitimate', description: 'Confirm it\'s valid', color: '#20c997' }
+                ].map(action => (
+                  <div 
+                    key={action.value}
+                    onClick={() => setActHandlerForm({...actHandlerForm, action: action.value})}
+                    style={{
+                      padding: '1rem',
+                      backgroundColor: actHandlerForm.action === action.value ? '#e7f3ff' : '#f8f9fa',
+                      borderRadius: '8px',
+                      border: `2px solid ${actHandlerForm.action === action.value ? '#007bff' : '#dee2e6'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ 
+                      width: '12px', 
+                      height: '12px', 
+                      borderRadius: '50%', 
+                      backgroundColor: action.color,
+                      marginBottom: '0.5rem'
+                    }}></div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                      {action.label}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#6c757d' }}>
+                      {action.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Form Fields */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>
+                📝 Additional Details
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Detection Item ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Auto-filled when you select above"
+                    value={actHandlerForm.detectionItemId}
+                    onChange={(e) => setActHandlerForm({...actHandlerForm, detectionItemId: e.target.value})}
+                    style={{...inputStyle, backgroundColor: actHandlerForm.detectionItemId ? '#fff' : '#f8f9fa'}}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    User ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="debug-user-123"
+                    value={actHandlerForm.userId}
+                    onChange={(e) => setActHandlerForm({...actHandlerForm, userId: e.target.value})}
+                    style={inputStyle}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Merchant Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Netflix"
+                    value={actHandlerForm.metadata.merchant}
+                    onChange={(e) => setActHandlerForm({
+                      ...actHandlerForm, 
+                      metadata: {...actHandlerForm.metadata, merchant: e.target.value}
+                    })}
+                    style={inputStyle}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Amount ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="15.99"
+                    value={actHandlerForm.metadata.amount}
+                    onChange={(e) => setActHandlerForm({
+                      ...actHandlerForm, 
+                      metadata: {...actHandlerForm.metadata, amount: parseFloat(e.target.value)}
+                    })}
+                    style={inputStyle}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Account Last 4
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="1234"
+                    value={actHandlerForm.metadata.accountLast4}
+                    onChange={(e) => setActHandlerForm({
+                      ...actHandlerForm, 
+                      metadata: {...actHandlerForm.metadata, accountLast4: e.target.value}
+                    })}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <button 
+                onClick={testActHandler}
+                disabled={isLoading}
+                style={{
+                  padding: '0.75rem 2rem',
+                  backgroundColor: isLoading ? '#6c757d' : '#ffc107',
+                  color: isLoading ? '#ffffff' : '#212529',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                {isLoading ? '⏳' : '🚀'} {isLoading ? 'Testing...' : 'Test Action Handler'}
+              </button>
+              
+              {actHandlerResponse && (
+                <div style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: actHandlerResponse.success ? '#d4edda' : '#f8d7da',
+                  borderRadius: '6px',
+                  border: `1px solid ${actHandlerResponse.success ? '#c3e6cb' : '#f5c6cb'}`,
+                  fontSize: '0.875rem',
+                  fontWeight: 'bold',
+                  color: actHandlerResponse.success ? '#155724' : '#721c24'
+                }}>
+                  {actHandlerResponse.success ? '✅ Success' : '❌ Error'}
+                </div>
+              )}
+            </div>
+            
+            {/* actHandler Response */}
+            {actHandlerResponse && (
+              <div style={{
+                marginTop: '1.5rem',
+                padding: '1.5rem',
+                backgroundColor: actHandlerResponse.success ? '#d4edda' : '#f8d7da',
+                borderRadius: '8px',
+                border: `1px solid ${actHandlerResponse.success ? '#c3e6cb' : '#f5c6cb'}`
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    backgroundColor: actHandlerResponse.success ? '#28a745' : '#dc3545',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: '0.75rem'
+                  }}>
+                    <span style={{ color: 'white', fontSize: '12px' }}>
+                      {actHandlerResponse.success ? '✓' : '✗'}
+                    </span>
+                  </div>
+                  <h4 style={{ margin: 0, color: actHandlerResponse.success ? '#155724' : '#721c24' }}>
+                    {actHandlerResponse.success ? 'Action Handler Response' : 'Error Response'}
+                  </h4>
+                </div>
+                <pre style={{ 
+                  whiteSpace: 'pre-wrap', 
+                  fontSize: '0.875rem',
+                  backgroundColor: '#ffffff',
+                  padding: '1rem',
+                  borderRadius: '6px',
+                  border: '1px solid #dee2e6',
+                  margin: 0,
+                  overflow: 'auto',
+                  maxHeight: '300px'
+                }}>
+                  {JSON.stringify(actHandlerResponse, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+
+          {/* cancelApi Testing */}
+          <div style={{
+            padding: '1.5rem',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            border: '1px solid #dee2e6',
+            marginBottom: '2rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                backgroundColor: '#17a2b8',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '0.75rem'
+              }}>
+                <span style={{ color: 'white', fontSize: '16px' }}>🛒</span>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, color: '#495057' }}>Step 3: Test Merchant API</h3>
+                <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.875rem' }}>
+                  This Lambda function simulates API calls to merchant services for cancellation
+                </p>
+              </div>
+            </div>
+            
+            {/* Merchant Selection */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>
+                🏪 Choose Merchant Service
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                {[
+                  { value: 'Netflix', label: 'Netflix', successRate: 90, description: 'Streaming service', color: '#e50914' },
+                  { value: 'Spotify', label: 'Spotify', successRate: 85, description: 'Music streaming', color: '#1db954' },
+                  { value: 'Amazon Prime', label: 'Amazon Prime', successRate: 70, description: 'E-commerce & streaming', color: '#ff9900' },
+                  { value: 'Disney+', label: 'Disney+', successRate: 80, description: 'Disney streaming', color: '#113ccf' },
+                  { value: 'Adobe', label: 'Adobe', successRate: 60, description: 'Creative software', color: '#ff0000' },
+                  { value: 'Microsoft', label: 'Microsoft', successRate: 65, description: 'Office & cloud', color: '#0078d4' },
+                  { value: 'Apple', label: 'Apple', successRate: 80, description: 'Apple services', color: '#007aff' },
+                  { value: 'Google', label: 'Google', successRate: 85, description: 'Google services', color: '#4285f4' },
+                  { value: 'Unknown', label: 'Unknown Service', successRate: 30, description: 'Unknown merchant', color: '#6c757d' }
+                ].map(merchant => (
+                  <div 
+                    key={merchant.value}
+                    onClick={() => setCancelApiForm({
+                      ...cancelApiForm, 
+                      metadata: {...cancelApiForm.metadata, merchant: merchant.value}
+                    })}
+                    style={{
+                      padding: '1rem',
+                      backgroundColor: cancelApiForm.metadata.merchant === merchant.value ? '#e7f3ff' : '#f8f9fa',
+                      borderRadius: '8px',
+                      border: `2px solid ${cancelApiForm.metadata.merchant === merchant.value ? '#007bff' : '#dee2e6'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <div style={{ 
+                        width: '12px', 
+                        height: '12px', 
+                        borderRadius: '50%', 
+                        backgroundColor: merchant.color
+                      }}></div>
+                      <div style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: merchant.successRate >= 80 ? '#d4edda' : merchant.successRate >= 60 ? '#fff3cd' : '#f8d7da',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        color: merchant.successRate >= 80 ? '#155724' : merchant.successRate >= 60 ? '#856404' : '#721c24'
+                      }}>
+                        {merchant.successRate}% success
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                      {merchant.label}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#6c757d' }}>
+                      {merchant.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Form Fields */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>
+                📝 Additional Details
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Detection Item ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Auto-filled when you select above"
+                    value={cancelApiForm.detectionItemId}
+                    onChange={(e) => setCancelApiForm({...cancelApiForm, detectionItemId: e.target.value})}
+                    style={{...inputStyle, backgroundColor: cancelApiForm.detectionItemId ? '#fff' : '#f8f9fa'}}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    User ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="debug-user-123"
+                    value={cancelApiForm.userId}
+                    onChange={(e) => setCancelApiForm({...cancelApiForm, userId: e.target.value})}
+                    style={inputStyle}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Amount ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="15.99"
+                    value={cancelApiForm.metadata.amount}
+                    onChange={(e) => setCancelApiForm({
+                      ...cancelApiForm, 
+                      metadata: {...cancelApiForm.metadata, amount: parseFloat(e.target.value)}
+                    })}
+                    style={inputStyle}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Account Last 4
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="1234"
+                    value={cancelApiForm.metadata.accountLast4}
+                    onChange={(e) => setCancelApiForm({
+                      ...cancelApiForm, 
+                      metadata: {...cancelApiForm.metadata, accountLast4: e.target.value}
+                    })}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <button 
+                onClick={testCancelApi}
+                disabled={isLoading}
+                style={{
+                  padding: '0.75rem 2rem',
+                  backgroundColor: isLoading ? '#6c757d' : '#17a2b8',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                {isLoading ? '⏳' : '🛒'} {isLoading ? 'Testing...' : 'Test Merchant API'}
+              </button>
+              
+              {cancelApiResponse && (
+                <div style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: cancelApiResponse.success ? '#d4edda' : '#f8d7da',
+                  borderRadius: '6px',
+                  border: `1px solid ${cancelApiResponse.success ? '#c3e6cb' : '#f5c6cb'}`,
+                  fontSize: '0.875rem',
+                  fontWeight: 'bold',
+                  color: cancelApiResponse.success ? '#155724' : '#721c24'
+                }}>
+                  {cancelApiResponse.success ? '✅ Success' : '❌ Error'}
+                </div>
+              )}
+            </div>
+            
+            {/* cancelApi Response */}
+            {cancelApiResponse && (
+              <div style={{
+                marginTop: '1.5rem',
+                padding: '1.5rem',
+                backgroundColor: cancelApiResponse.success ? '#d4edda' : '#f8d7da',
+                borderRadius: '8px',
+                border: `1px solid ${cancelApiResponse.success ? '#c3e6cb' : '#f5c6cb'}`
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    backgroundColor: cancelApiResponse.success ? '#28a745' : '#dc3545',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: '0.75rem'
+                  }}>
+                    <span style={{ color: 'white', fontSize: '12px' }}>
+                      {cancelApiResponse.success ? '✓' : '✗'}
+                    </span>
+                  </div>
+                  <h4 style={{ margin: 0, color: cancelApiResponse.success ? '#155724' : '#721c24' }}>
+                    {cancelApiResponse.success ? 'Merchant API Response' : 'Error Response'}
+                  </h4>
+                </div>
+                <pre style={{ 
+                  whiteSpace: 'pre-wrap', 
+                  fontSize: '0.875rem',
+                  backgroundColor: '#ffffff',
+                  padding: '1rem',
+                  borderRadius: '6px',
+                  border: '1px solid #dee2e6',
+                  margin: 0,
+                  overflow: 'auto',
+                  maxHeight: '300px'
+                }}>
+                  {JSON.stringify(cancelApiResponse, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+
+          {/* cancelEmail Testing */}
+          <div style={{
+            padding: '1.5rem',
+            backgroundColor: '#ffffff',
+            borderRadius: '8px',
+            border: '1px solid #dee2e6'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                backgroundColor: '#6f42c1',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '0.75rem'
+              }}>
+                <span style={{ color: 'white', fontSize: '16px' }}>📧</span>
+              </div>
+              <div>
+                <h3 style={{ margin: 0, color: '#495057' }}>Step 4: Test Email Cancellation</h3>
+                <p style={{ margin: '0.25rem 0 0 0', color: '#6c757d', fontSize: '0.875rem' }}>
+                  This Lambda function simulates sending cancellation emails when API calls fail
+                </p>
+              </div>
+            </div>
+            
+            {/* Merchant Selection */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>
+                📧 Choose Merchant for Email Cancellation
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                {[
+                  { value: 'Netflix', label: 'Netflix', successRate: 85, description: 'Streaming service', color: '#e50914' },
+                  { value: 'Spotify', label: 'Spotify', successRate: 80, description: 'Music streaming', color: '#1db954' },
+                  { value: 'Amazon Prime', label: 'Amazon Prime', successRate: 75, description: 'E-commerce & streaming', color: '#ff9900' },
+                  { value: 'Disney+', label: 'Disney+', successRate: 82, description: 'Disney streaming', color: '#113ccf' },
+                  { value: 'Adobe', label: 'Adobe', successRate: 70, description: 'Creative software', color: '#ff0000' },
+                  { value: 'Microsoft', label: 'Microsoft', successRate: 72, description: 'Office & cloud', color: '#0078d4' },
+                  { value: 'Apple', label: 'Apple', successRate: 85, description: 'Apple services', color: '#007aff' },
+                  { value: 'Google', label: 'Google', successRate: 88, description: 'Google services', color: '#4285f4' },
+                  { value: 'Unknown', label: 'Unknown Service', successRate: 60, description: 'Unknown merchant', color: '#6c757d' }
+                ].map(merchant => (
+                  <div 
+                    key={merchant.value}
+                    onClick={() => setCancelEmailForm({
+                      ...cancelEmailForm, 
+                      metadata: {...cancelEmailForm.metadata, merchant: merchant.value}
+                    })}
+                    style={{
+                      padding: '1rem',
+                      backgroundColor: cancelEmailForm.metadata.merchant === merchant.value ? '#e7f3ff' : '#f8f9fa',
+                      borderRadius: '8px',
+                      border: `2px solid ${cancelEmailForm.metadata.merchant === merchant.value ? '#007bff' : '#dee2e6'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <div style={{ 
+                        width: '12px', 
+                        height: '12px', 
+                        borderRadius: '50%', 
+                        backgroundColor: merchant.color
+                      }}></div>
+                      <div style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: merchant.successRate >= 80 ? '#d4edda' : merchant.successRate >= 70 ? '#fff3cd' : '#f8d7da',
+                        borderRadius: '4px',
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        color: merchant.successRate >= 80 ? '#155724' : merchant.successRate >= 70 ? '#856404' : '#721c24'
+                      }}>
+                        {merchant.successRate}% success
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                      {merchant.label}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#6c757d' }}>
+                      {merchant.description}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Form Fields */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '0.5rem', color: '#495057' }}>
+                📝 Email Details
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Detection Item ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Auto-filled when you select above"
+                    value={cancelEmailForm.detectionItemId}
+                    onChange={(e) => setCancelEmailForm({...cancelEmailForm, detectionItemId: e.target.value})}
+                    style={{...inputStyle, backgroundColor: cancelEmailForm.detectionItemId ? '#fff' : '#f8f9fa'}}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    User ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="debug-user-123"
+                    value={cancelEmailForm.userId}
+                    onChange={(e) => setCancelEmailForm({...cancelEmailForm, userId: e.target.value})}
+                    style={inputStyle}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Amount ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="15.99"
+                    value={cancelEmailForm.metadata.amount}
+                    onChange={(e) => setCancelEmailForm({
+                      ...cancelEmailForm, 
+                      metadata: {...cancelEmailForm.metadata, amount: parseFloat(e.target.value)}
+                    })}
+                    style={inputStyle}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 'bold', marginBottom: '0.25rem', color: '#495057' }}>
+                    Account Last 4
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="1234"
+                    value={cancelEmailForm.metadata.accountLast4}
+                    onChange={(e) => setCancelEmailForm({
+                      ...cancelEmailForm, 
+                      metadata: {...cancelEmailForm.metadata, accountLast4: e.target.value}
+                    })}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <button 
+                onClick={testCancelEmail}
+                disabled={isLoading}
+                style={{
+                  padding: '0.75rem 2rem',
+                  backgroundColor: isLoading ? '#6c757d' : '#6f42c1',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                {isLoading ? '⏳' : '📧'} {isLoading ? 'Sending...' : 'Send Cancellation Email'}
+              </button>
+              
+              {cancelEmailResponse && (
+                <div style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: cancelEmailResponse.success ? '#d4edda' : '#f8d7da',
+                  borderRadius: '6px',
+                  border: `1px solid ${cancelEmailResponse.success ? '#c3e6cb' : '#f5c6cb'}`,
+                  fontSize: '0.875rem',
+                  fontWeight: 'bold',
+                  color: cancelEmailResponse.success ? '#155724' : '#721c24'
+                }}>
+                  {cancelEmailResponse.success ? '✅ Email Sent' : '❌ Email Failed'}
+                </div>
+              )}
+            </div>
+            
+            {/* cancelEmail Response */}
+            {cancelEmailResponse && (
+              <div style={{
+                marginTop: '1.5rem',
+                padding: '1.5rem',
+                backgroundColor: cancelEmailResponse.success ? '#d4edda' : '#f8d7da',
+                borderRadius: '8px',
+                border: `1px solid ${cancelEmailResponse.success ? '#c3e6cb' : '#f5c6cb'}`
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    backgroundColor: cancelEmailResponse.success ? '#28a745' : '#dc3545',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: '0.75rem'
+                  }}>
+                    <span style={{ color: 'white', fontSize: '12px' }}>
+                      {cancelEmailResponse.success ? '✓' : '✗'}
+                    </span>
+                  </div>
+                  <h4 style={{ margin: 0, color: cancelEmailResponse.success ? '#155724' : '#721c24' }}>
+                    {cancelEmailResponse.success ? 'Email Cancellation Response' : 'Email Failure Response'}
+                  </h4>
+                </div>
+                
+                {/* Email Details Section */}
+                {cancelEmailResponse.emailDetails && (
+                  <div style={{
+                    marginBottom: '1rem',
+                    padding: '1rem',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '6px',
+                    border: '1px solid #dee2e6'
+                  }}>
+                    <h5 style={{ margin: '0 0 0.75rem 0', color: '#495057' }}>📧 Email Details</h5>
+                    <div style={{ display: 'grid', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        <div style={{ minWidth: '80px', fontWeight: 'bold', color: '#6c757d' }}>From:</div>
+                        <div style={{ color: '#495057' }}>{cancelEmailResponse.emailDetails.from}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        <div style={{ minWidth: '80px', fontWeight: 'bold', color: '#6c757d' }}>To:</div>
+                        <div style={{ color: '#495057' }}>{cancelEmailResponse.emailDetails.to}</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '1rem' }}>
+                        <div style={{ minWidth: '80px', fontWeight: 'bold', color: '#6c757d' }}>Subject:</div>
+                        <div style={{ color: '#495057' }}>{cancelEmailResponse.emailDetails.subject}</div>
+                      </div>
+                    </div>
+                    
+                    <div style={{ marginTop: '0.75rem' }}>
+                      <div style={{ fontWeight: 'bold', color: '#6c757d', marginBottom: '0.5rem' }}>Body:</div>
+                      <div style={{
+                        backgroundColor: '#f8f9fa',
+                        padding: '0.75rem',
+                        borderRadius: '4px',
+                        border: '1px solid #e9ecef',
+                        fontSize: '0.875rem',
+                        whiteSpace: 'pre-wrap',
+                        color: '#495057',
+                        maxHeight: '200px',
+                        overflow: 'auto'
+                      }}>
+                        {cancelEmailResponse.emailDetails.body}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <pre style={{ 
+                  whiteSpace: 'pre-wrap', 
+                  fontSize: '0.875rem',
+                  backgroundColor: '#ffffff',
+                  padding: '1rem',
+                  borderRadius: '6px',
+                  border: '1px solid #dee2e6',
+                  margin: 0,
+                  overflow: 'auto',
+                  maxHeight: '300px'
+                }}>
+                  {JSON.stringify(cancelEmailResponse, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      </main>
+    </div>
   );
 }
