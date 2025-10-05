@@ -3,6 +3,7 @@ import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
 import { Calendar, Pause, RefreshCw, Sparkles, TrendingUp, Wallet, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { headers } from "next/headers"
 
 const formatCurrency = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -15,89 +16,25 @@ const formatDate = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 })
 
-const subscriptions = [
-  {
-    id: "1",
-    name: "Netflix Premium",
-    amount: 15.99,
-    billing: "monthly",
-    nextBilling: "2025-10-15",
-    status: "active",
-    category: "Entertainment",
-  },
-  {
-    id: "2",
-    name: "Spotify Family",
-    amount: 16.99,
-    billing: "monthly",
-    nextBilling: "2025-10-20",
-    status: "active",
-    category: "Music",
-  },
-  {
-    id: "3",
-    name: "Adobe Creative Cloud",
-    amount: 54.99,
-    billing: "monthly",
-    nextBilling: "2025-10-10",
-    status: "active",
-    category: "Software",
-  },
-  {
-    id: "4",
-    name: "Amazon Prime",
-    amount: 14.99,
-    billing: "monthly",
-    nextBilling: "2025-10-25",
-    status: "active",
-    category: "Shopping",
-  },
-  {
-    id: "5",
-    name: "ChatGPT Plus",
-    amount: 20,
-    billing: "monthly",
-    nextBilling: "2025-10-18",
-    status: "active",
-    category: "AI Tools",
-  },
-  {
-    id: "6",
-    name: "Gym Membership",
-    amount: 49.99,
-    billing: "monthly",
-    nextBilling: "2025-10-05",
-    status: "paused",
-    category: "Fitness",
-  },
-  {
-    id: "7",
-    name: "New York Times",
-    amount: 17,
-    billing: "monthly",
-    nextBilling: "2025-10-12",
-    status: "active",
-    category: "News",
-  },
-  {
-    id: "8",
-    name: "Dropbox Plus",
-    amount: 11.99,
-    billing: "monthly",
-    nextBilling: "2025-10-22",
-    status: "active",
-    category: "Storage",
-  },
-]
+async function getData() {
+  const h = headers()
+  const host = h.get("x-forwarded-host") ?? h.get("host")
+  const proto = h.get("x-forwarded-proto") ?? "http"
+  const base = process.env.NEXT_PUBLIC_BASE_URL || (host ? `${proto}://${host}` : "http://localhost:3000")
+  const res = await fetch(`${base}/api/subscriptions`, { cache: "no-store" })
+  const json = await res.json()
+  const items: any[] = Array.isArray(json.items) ? json.items : []
+  return items
+}
 
-const activeSubscriptions = subscriptions.filter((subscription) => subscription.status === "active")
-const pausedSubscriptions = subscriptions.filter((subscription) => subscription.status === "paused")
-const totalMonthly = activeSubscriptions.reduce((sum, subscription) => sum + subscription.amount, 0)
-const earliestNextBilling = [...subscriptions].sort(
-  (a, b) => new Date(a.nextBilling).getTime() - new Date(b.nextBilling).getTime(),
-)[0]
-
-export default function SubscriptionsPage() {
+export default async function SubscriptionsPage() {
+  const subscriptions = await getData()
+  const activeSubscriptions = subscriptions.filter((s: any) => s.status === "active")
+  const pausedSubscriptions = subscriptions.filter((s: any) => s.status === "paused")
+  const totalMonthly = activeSubscriptions.reduce((sum: number, s: any) => sum + s.amount, 0)
+  const earliestNextBilling = [...subscriptions].sort(
+    (a: any, b: any) => new Date(a.nextBilling).getTime() - new Date(b.nextBilling).getTime(),
+  )[0]
   return (
     <div className="space-y-8">
       <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-background via-background to-primary/10 px-6 py-10 shadow-[var(--shadow-soft)] backdrop-blur-xl transition-surface motion-safe:animate-fade-up sm:px-10">

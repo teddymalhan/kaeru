@@ -1,61 +1,42 @@
 "use client"
 
+import { useEffect, useState } from "react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Badge } from "@/app/components/ui/badge"
 import { Button } from "@/app/components/ui/button"
 import { XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const subscriptions = [
-  {
-    id: 1,
-    name: "Netflix Premium",
-    amount: 15.99,
-    frequency: "monthly",
-    nextBilling: "Dec 15, 2024",
-    status: "active",
-  },
-  {
-    id: 2,
-    name: "Spotify Family",
-    amount: 16.99,
-    frequency: "monthly",
-    nextBilling: "Dec 18, 2024",
-    status: "active",
-  },
-  {
-    id: 3,
-    name: "Adobe Creative Cloud",
-    amount: 54.99,
-    frequency: "monthly",
-    nextBilling: "Dec 20, 2024",
-    status: "active",
-  },
-  {
-    id: 4,
-    name: "Planet Fitness",
-    amount: 24.99,
-    frequency: "monthly",
-    nextBilling: "Dec 12, 2024",
-    status: "cancelling",
-  },
-]
+type Sub = { id: string; name: string; amount: number; billing?: string; nextBilling: string; status: string }
 
 export function SubscriptionsList() {
+  const [items, setItems] = useState<Sub[]>([])
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const res = await fetch("/api/subscriptions", { cache: "no-store" })
+        const json = await res.json()
+        setItems(Array.isArray(json.items) ? json.items : [])
+      } catch {
+        setItems([])
+      }
+    })()
+  }, [])
   return (
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="flex items-center justify-between text-base font-semibold">
           <span>Active Subscriptions</span>
           <div className="rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs font-semibold text-muted-foreground">
-            ${subscriptions.reduce((sum, sub) => sum + sub.amount, 0).toFixed(2)}/mo
+            {`$${items.reduce((sum, sub) => sum + sub.amount, 0).toFixed(2)}/mo`}
           </div>
         </CardTitle>
         <p className="text-sm text-muted-foreground">Track recurring spend and proactively cancel stale services.</p>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {subscriptions.map((subscription) => (
+          {items.map((subscription) => (
             <div
               key={subscription.id}
               className="flex items-center justify-between gap-4 rounded-2xl border border-transparent bg-background/50 px-4 py-3 transition-surface hover:border-primary/25 hover:bg-primary/10"
@@ -72,7 +53,7 @@ export function SubscriptionsList() {
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">Next billing: {subscription.nextBilling}</p>
+                <p className="text-xs text-muted-foreground">Next billing: {new Date(subscription.nextBilling).toLocaleDateString()}</p>
               </div>
               <div className="flex items-center gap-3">
                 <p className="font-semibold tabular-nums text-foreground/90">

@@ -1,10 +1,28 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Badge } from "@/app/components/ui/badge"
 import { Phone, Clock, CheckCircle2 } from "lucide-react"
 
 export function AgentStatus() {
+  const [data, setData] = useState<{ activeCalls: any[]; queuedTasks: any[]; completedToday: any[] } | null>(null)
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const res = await fetch("/api/agent", { cache: "no-store" })
+        const json = await res.json()
+        setData(json)
+      } catch {
+        setData({ activeCalls: [], queuedTasks: [], completedToday: [] })
+      }
+    })()
+  }, [])
+
+  const first = data?.activeCalls?.[0]
+  const queue = data?.queuedTasks?.length ?? 0
+  const done = data?.completedToday?.length ?? 0
+
   return (
     <Card>
       <CardHeader>
@@ -23,24 +41,24 @@ export function AgentStatus() {
               <Phone className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">On Call</p>
-              <p className="text-xs text-muted-foreground">Comcast Customer Service</p>
+              <p className="text-sm font-semibold text-foreground">{first ? "On Call" : "Idle"}</p>
+              <p className="text-xs text-muted-foreground">{first?.merchant ?? "No active calls"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 py-1 text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span className="text-sm font-semibold tabular-nums">12:34</span>
+            <span className="text-sm font-semibold tabular-nums">{first?.duration ?? "—"}</span>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-2xl border border-border/50 bg-background/80 px-3 py-4 text-center shadow-sm">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Queue</p>
-            <p className="mt-2 text-2xl font-semibold">3</p>
+            <p className="mt-2 text-2xl font-semibold">{queue}</p>
           </div>
           <div className="rounded-2xl border border-border/50 bg-background/80 px-3 py-4 text-center shadow-sm">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Completed</p>
-            <p className="mt-2 text-2xl font-semibold">12</p>
+            <p className="mt-2 text-2xl font-semibold">{done}</p>
           </div>
           <div className="rounded-2xl border border-border/50 bg-background/80 px-3 py-4 text-center shadow-sm">
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Hours Saved</p>
@@ -51,11 +69,7 @@ export function AgentStatus() {
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 className="h-4 w-4 text-primary" />
-            <span className="text-muted-foreground">Netflix subscription cancelled</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-            <span className="text-muted-foreground">Amazon return initiated</span>
+            <span className="text-muted-foreground">Status updates reflect live calls</span>
           </div>
         </div>
       </CardContent>

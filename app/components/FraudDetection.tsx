@@ -1,31 +1,7 @@
-import { AlertTriangle, Shield } from "lucide-react";
+"use client";
 
-const suspiciousTransactions = [
-	{
-		id: 1,
-		amount: "$1,299.99",
-		merchant: "Electronics Depot Online",
-		date: "Oct 4, 2025",
-		riskLevel: "high",
-		reason: "Unusual spending pattern",
-	},
-	{
-		id: 2,
-		amount: "$89.99",
-		merchant: "Gaming Store",
-		date: "Oct 3, 2025",
-		riskLevel: "medium",
-		reason: "New merchant",
-	},
-	{
-		id: 3,
-		amount: "$45.50",
-		merchant: "Coffee Express",
-		date: "Oct 2, 2025",
-		riskLevel: "low",
-		reason: "Location anomaly",
-	},
-];
+import { useEffect, useState } from "react";
+import { AlertTriangle, Shield } from "lucide-react";
 
 function getRiskColor(level: string) {
 	switch (level) {
@@ -40,7 +16,21 @@ function getRiskColor(level: string) {
 	}
 }
 
+type Suspicious = { id: number; amount: string; merchant: string; date: string; riskLevel: string; reason: string };
+
 export function FraudDetection() {
+	const [items, setItems] = useState<Suspicious[]>([]);
+	useEffect(() => {
+		(async () => {
+			try {
+				const res = await fetch("/api/fraud-detection", { cache: "no-store" });
+				const json = await res.json();
+				setItems(Array.isArray(json.items) ? json.items : []);
+			} catch {
+				setItems([]);
+			}
+		})();
+	}, []);
 	return (
 		<div className="rounded-3xl border border-border/60 bg-card/90 p-6 shadow-[var(--shadow-soft)] backdrop-blur-sm">
 			<div className="mb-5 flex items-center gap-3">
@@ -55,7 +45,7 @@ export function FraudDetection() {
 
 			<div className="mb-5 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-100/70 via-background to-background px-5 py-4 dark:border-amber-400/40 dark:from-amber-500/25 dark:via-background/60">
 				<p className="text-sm font-semibold text-foreground">
-					3 Suspicious Transactions Detected
+					{items.length} Suspicious Transactions Detected
 				</p>
 				<p className="mt-1 text-xs text-muted-foreground">
 					Our AI has identified potentially fraudulent activity. Review and dispute if necessary.
@@ -63,7 +53,7 @@ export function FraudDetection() {
 			</div>
 
 			<div className="space-y-4">
-				{suspiciousTransactions.map((transaction) => (
+				{items.map((transaction) => (
 					<div
 						key={transaction.id}
 						className="flex items-start gap-4 rounded-2xl border border-border/60 bg-muted/40 p-4 transition-surface hover:border-primary/35 hover:bg-muted/60 hover:shadow-[var(--shadow-soft)] dark:bg-muted/20"
