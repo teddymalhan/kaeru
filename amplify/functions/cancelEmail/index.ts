@@ -153,7 +153,7 @@ async function simulateEmailSending(
     const draftId = `DRAFT_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Simulate email content creation
-    const emailContent = generateEmailContent(merchant, metadata);
+    const emailContent = generateEmailContent(merchant, metadata, detectionItemId);
     console.log(`📧 Email content generated for ${merchant}:`, emailContent.subject);
     
     console.log(`✅ Email sent successfully to ${merchant} support team`);
