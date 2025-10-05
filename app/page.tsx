@@ -8,7 +8,8 @@ import PlaidLink from "./components/PlaidLink";
 import FraudDetectionPanel from "./components/FraudDetectionPanel";
 import "./../app/app.css";
 
-const client = generateClient<Schema>();
+// Lazily initialize Amplify Data client inside functions to avoid build-time initialization
+const getClient = () => generateClient<Schema>();
 
 export default function App() {
   const [subscriptions, setSubscriptions] = useState<Array<Schema["DetectionItem"]["type"]>>([]);
@@ -16,6 +17,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'subscriptions' | 'fraud-detection'>('subscriptions');
 
   function listSubscriptions() {
+    const client = getClient();
     client.models.DetectionItem.observeQuery().subscribe({
       next: (data) => setSubscriptions([...data.items]),
     });
@@ -33,6 +35,7 @@ export default function App() {
   };
 
   async function createSubscription() {
+    const client = getClient();
     const content = window.prompt("What subscription or service do you want to cancel?");
     if (content) {
       // Create a dummy transaction first (required for DetectionItem)
@@ -54,6 +57,7 @@ export default function App() {
   }
 
   function deleteSubscription(id: string) {
+    const client = getClient();
     client.models.DetectionItem.delete({ id });
   }
 

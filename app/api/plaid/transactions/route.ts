@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Configuration, PlaidApi, PlaidEnvironments, TransactionsGetRequest } from 'plaid';
 
+// Ensure this route is always treated as dynamic at build time
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

@@ -6,7 +6,8 @@ import { generateClient } from 'aws-amplify/data';
 // import { createAIHooks } from '@aws-amplify/ui-react-ai';
 import type { Schema } from '@/amplify/data/resource';
 
-const client = generateClient<Schema>();
+// Lazily initialize Amplify Data client inside functions to avoid build-time initialization
+const getClient = () => generateClient<Schema>();
 // const { useAIGeneration, useAIConversation } = createAIHooks(client);
 
 interface FraudSummary {
@@ -77,6 +78,7 @@ export default function FraudDetectionPanel() {
     setAnalyzing(true);
     try {
       // Get transaction data first
+      const client = getClient();
       const transaction = await client.models.Transaction.get({ id: transactionId });
       
       if (!transaction.data) {
@@ -115,11 +117,11 @@ export default function FraudDetectionPanel() {
         message += `Recommended Action: ${action}\n\n`;
         
         if (analysis.fraudIndicators.length > 0) {
-          message += `Fraud Indicators:\n${analysis.fraudIndicators.map(indicator => `• ${indicator}`).join('\n')}\n\n`;
+          message += `Fraud Indicators:\n${analysis.fraudIndicators.map((indicator: string) => `• ${indicator}`).join('\n')}\n\n`;
         }
         
         if (analysis.suspiciousPatterns.length > 0) {
-          message += `Suspicious Patterns:\n${analysis.suspiciousPatterns.map(pattern => `• ${pattern}`).join('\n')}\n\n`;
+          message += `Suspicious Patterns:\n${analysis.suspiciousPatterns.map((pattern: string) => `• ${pattern}`).join('\n')}\n\n`;
         }
         
         if (riskLevel === 'HIGH') {
