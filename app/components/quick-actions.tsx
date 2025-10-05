@@ -4,9 +4,18 @@ import { useCallback, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
 import type { LucideIcon } from "lucide-react"
-import { Phone, XCircle, AlertTriangle } from "lucide-react"
+import { Phone, XCircle, AlertTriangle, Search } from "lucide-react"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
 import { cn } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog"
+import { transactions as allTransactions } from "@/app/lib/sample-data"
 
 type QuickAction = {
   key: string
@@ -28,6 +37,10 @@ const randomId = (prefix: string) => `${prefix}-${Math.random().toString(36).sli
 export function QuickActions() {
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [outcomes, setOutcomes] = useState<Record<string, ActionOutcome | undefined>>({})
+  const [disputeOpen, setDisputeOpen] = useState(false)
+  const [disputeQuery, setDisputeQuery] = useState("")
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [creatingDispute, setCreatingDispute] = useState(false)
 
   const actions: QuickAction[] = [
     {
@@ -85,6 +98,12 @@ export function QuickActions() {
         return
       }
 
+      // For "New Dispute", open selector modal instead of calling immediately
+      if (action.key === "new-dispute") {
+        setDisputeOpen(true)
+        return
+      }
+
       setLoadingAction(action.key)
 
       try {
@@ -121,6 +140,50 @@ export function QuickActions() {
     [loadingAction],
   )
 
+  const performNewDispute = useCallback(async () => {
+    if (creatingDispute || !selectedId) return
+    setCreatingDispute(true)
+    try {
+      const result = await postJson({
+        endpoint: "/api/actHandler",
+        body: {
+          action: "dispute",
+          detectionItemId: selectedId,
+          userId: "user456",
+          metadata: (allTransactions.find((t) => t.id === selectedId) ?? null) as unknown,
+        },
+      })
+      setOutcomes((prev) => ({
+        ...prev,
+        ["new-dispute"]: {
+          status: result.ok ? "success" : "error",
+          httpStatus: result.status,
+          timestamp: Date.now(),
+          payload: result.data,
+          error: result.ok ? null : result.error,
+        },
+      }))
+      if (result.ok) {
+        setDisputeOpen(false)
+        setDisputeQuery("")
+        setSelectedId(null)
+      }
+    } catch (error) {
+      setOutcomes((prev) => ({
+        ...prev,
+        ["new-dispute"]: {
+          status: "error",
+          httpStatus: 0,
+          timestamp: Date.now(),
+          payload: null,
+          error,
+        },
+      }))
+    } finally {
+      setCreatingDispute(false)
+    }
+  }, [creatingDispute, selectedId])
+
   return (
     <Card>
       <CardHeader className="space-y-1">
@@ -153,6 +216,78 @@ export function QuickActions() {
             )
           })}
         </div>
+
+        {/* New Dispute Selector */}
+        <Dialog open={disputeOpen} onOpenChange={setDisputeOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Select a transaction to dispute</DialogTitle>
+              <DialogDescription>Search and choose a specific transaction to file a dispute.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+                <input
+                  value={disputeQuery}
+                  onChange={(e) => setDisputeQuery(e.target.value)}
+                  placeholder="Search by merchant, amount, category, or ID"
+                  className="h-10 w-full rounded-full border border-border/60 bg-background/70 pl-10 pr-3 text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div className="max-h-80 overflow-auto rounded-xl border border-border/60">
+                <div className="divide-y divide-border/60">
+                  {allTransactions
+                    .filter((t) => {
+                      const q = disputeQuery.trim().toLowerCase()
+                      if (!q) return true
+                      return (
+                        t.merchant.toLowerCase().includes(q) ||
+                        t.category.toLowerCase().includes(q) ||
+                        t.id.toLowerCase().includes(q) ||
+                        String(t.amount).includes(q)
+                      )
+                    })
+                    .slice()
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((t) => {
+                      const isSelected = selectedId === t.id
+                      return (
+                        <button
+                          type="button"
+                          key={t.id}
+                          onClick={() => setSelectedId(t.id)}
+                          className={cn(
+                            "flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-surface",
+                            isSelected ? "bg-primary/10 text-primary" : "hover:bg-primary/5 text-foreground",
+                          )}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="truncate text-sm font-semibold">{t.merchant}</span>
+                              {t.status === "flagged" && (
+                                <span className="rounded-full border border-destructive/40 bg-destructive/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
+                                  Flagged
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground/80">
+                              {t.category} • {new Date(t.date).toLocaleDateString()} • ID {t.id}
+                            </div>
+                          </div>
+                          <div className="text-right text-sm font-semibold">${'{'}t.amount.toFixed(2){'}'}</div>
+                        </button>
+                      )
+                    })}
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="mt-3">
+              <Button onClick={performNewDispute} disabled={!selectedId || creatingDispute} className="rounded-full px-5">
+                {creatingDispute ? "Creating…" : "Create Dispute"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="mt-6 space-y-3">
           {actions.map((action) => {
