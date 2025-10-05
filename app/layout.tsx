@@ -3,25 +3,28 @@ import "./app.css";
 import AuthWrapper from "./components/AuthWrapper";
 import "@/lib/amplifyServerConfig";
 import { Inter } from "next/font/google";
+import { ThemeProvider } from "./components/theme-provider";
+import { cn } from "@/lib/utils";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body
-        className={`${inter.className} bg-gray-50 text-gray-900 min-h-screen flex flex-col`}
+    <html lang="en" suppressHydrationWarning>
+      <body className={cn(inter.className, "bg-background text-foreground min-h-screen flex flex-col")}
       >
-        <AuthWrapper>
-          <Navbar />
-          <main className="container mx-auto px-4 py-6">
-            {children}
-          </main>
-        </AuthWrapper>
+        <ThemeProvider>
+          <AuthWrapper>
+            <Navbar />
+            <main className="mx-auto w-full max-w-7xl px-4 pb-16 pt-8 md:pt-12">
+              {children}
+            </main>
+          </AuthWrapper>
+        </ThemeProvider>
       </body>
     </html>
   );
