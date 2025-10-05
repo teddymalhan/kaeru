@@ -1,62 +1,20 @@
 "use client"
 
 import { Shield, Bell, Settings, User, Plus } from "lucide-react";
-// import { Header } from "./components/Header";
+import { Navbar } from "./components/navbar";
 import { Stats } from "./components/Stats";
 import { AgentStatus } from "./components/AgentStatus";
 import { TaskList } from "./components/TaskList";
 import { FraudDetection } from "./components/FraudDetection";
-// import { CallQueue } from "./components/CallQueue";
 import { ActivityFeed } from "./components/ActivityFeed";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 
 export default function App() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Left: Logo and Agent Status */}
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-2.5">
-                <Shield className="h-5 w-5 text-gray-900" />
-                <span className="font-semibold text-gray-900">FinAgent AI</span>
-                <div className="flex items-center gap-1.5 ml-3 px-2.5 py-1 bg-green-50 rounded-full">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  <span className="text-xs font-medium text-green-700">Active</span>
-                </div>
-              </div>
-              
-              {/* Navigation */}
-              <nav className="flex items-center gap-8">
-                <a href="#" className="text-sm font-semibold text-gray-900">Dashboard</a>
-                <a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">History</a>
-                <a href="#" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Reports</a>
-              </nav>
-            </div>
+      {/* Navbar */}
+      <Navbar />
 
-            {/* Right: Actions */}
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors shadow-sm">
-                <Plus className="h-4 w-4" />
-                New Task
-              </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative">
-                <Bell className="h-5 w-5 text-gray-700" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white"></span>
-              </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <Settings className="h-5 w-5 text-gray-700" />
-              </button>
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <User className="h-5 w-5 text-gray-700" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-      
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8 bg-gray-50 min-h-screen">
         {/* Page Title */}

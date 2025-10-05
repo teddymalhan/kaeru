@@ -1,14 +1,9 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Navbar } from "./components/navbar";
 import "./app.css";
 import AuthWrapper from "./components/AuthWrapper";
+import { Inter } from "next/font/google";
 
 const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "Cancel My Stuff",
-  description: "Manage your subscriptions and cancellations",
-};
 
 export default function RootLayout({
   children,
@@ -21,6 +16,7 @@ export default function RootLayout({
         className={`${inter.className} bg-gray-50 text-gray-900 min-h-screen flex flex-col`}
       >
         <AuthWrapper>
+          <Navbar />
           <main className="container mx-auto px-4 py-6">
             {children}
           </main>
