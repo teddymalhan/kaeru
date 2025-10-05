@@ -35,3 +35,61 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Remove hover effects */
+button:hover, a:hover {
+  background-color: unset;
+  color: unset;
+  border-radius: unset;
+}
+
+/* Remove previous active state styles */
+.nav-link.active {
+  background-color: unset;
+  color: unset;
+  border-radius: unset;
+  padding: unset;
+}
+
+/* Dropdown menu with solid background */
+.dropdown-menu {
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  opacity: 1;
+  transform: translateY(0);
+  transition: none;
+}
+.dropdown-menu.open {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Mobile menu slide-in */
+.mobile-menu {
+  transform: translateY(-100%);
+  transition: none;
+}
+.mobile-menu.open {
+  transform: translateY(0);
+}
+
+/* Notification indicator */
+.notification-indicator {
+  background-color: var(--destructive);
+  border-radius: 50%;
+  width: 8px;
+  height: 8px;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+/* Button click feedback */
+button:active {
+  background-color: var(--primary-color);
+  color: var(--primary-foreground);
+  border-radius: 8px;
+  transform: none;
+  box-shadow: none;
+}
