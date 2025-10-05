@@ -7,7 +7,9 @@ import type { LucideIcon } from "lucide-react"
 import { Phone, XCircle, AlertTriangle, Search } from "lucide-react"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 import { addActivity } from "@/app/lib/activity"
+import { markSubscriptionCancelled } from "@/app/lib/subscriptions-store"
 import { isDisputeFiled, markDisputeFiled } from "@/app/lib/disputes-store"
 import {
   Dialog,
@@ -36,6 +38,7 @@ type ActionOutcome = {
 const randomId = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`
 
 export function QuickActions() {
+  const router = useRouter()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const [outcomes, setOutcomes] = useState<Record<string, ActionOutcome | undefined>>({})
   const [disputeOpen, setDisputeOpen] = useState(false)
@@ -74,8 +77,8 @@ export function QuickActions() {
         }),
     },
     {
-      key: "cancel-service",
-      label: "Cancel Service",
+      key: "cancel-subscription",
+      label: "Cancel Subscription",
       icon: XCircle,
       perform: () =>
         postJson({
@@ -145,13 +148,16 @@ export function QuickActions() {
               description: "Agent placed an outbound call",
               status: "in-progress",
             })
-          } else if (action.key === "cancel-service") {
+          } else if (action.key === "cancel-subscription") {
+            markSubscriptionCancelled((result as any)?.data?.id ?? randomId("sub"))
             addActivity({
-              type: "cancel",
-              title: "Service cancellation requested",
+              type: "subscription",
+              title: "Cancellation requested",
               description: "Submitted cancellation to provider",
               status: "completed",
             })
+            // Navigate to Subscriptions tab for continuity
+            router.push("/components/subscriptions")
           }
         }
       } catch (error) {
@@ -355,40 +361,7 @@ export function QuickActions() {
           </DialogContent>
         </Dialog>
 
-        <div className="mt-6 space-y-3">
-          {actions.map((action) => {
-            const outcome = outcomes[action.key]
-            const statusColor = outcome?.status === "success" ? "text-emerald-500 dark:text-emerald-300" : "text-destructive"
-
-            return (
-              <div
-                key={`${action.key}-outcome`}
-                className="rounded-2xl border border-border/60 bg-background/70 p-4 shadow-sm"
-              >
-                <div className="flex items-center justify-between text-sm">
-                  <p className="font-semibold text-foreground/90">{action.label}</p>
-                  {outcome ? (
-                    <span className={`${statusColor} font-semibold`}>
-                      {outcome.status.toUpperCase()} • HTTP {outcome.httpStatus}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">No request yet</span>
-                  )}
-                </div>
-                {outcome && (
-                  <>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {new Date(outcome.timestamp).toLocaleTimeString()} • {outcome.error ? "Error payload" : "Response payload"}
-                    </p>
-                    <pre className="mt-2 max-h-40 overflow-auto rounded-2xl border border-border/50 bg-card/80 p-3 text-xs text-muted-foreground">
-                      {JSON.stringify(outcome.error ?? outcome.payload, null, 2)}
-                    </pre>
-                  </>
-                )}
-              </div>
-            )
-          })}
-        </div>
+        {/* Outcome section removed per request to hide mock responses */}
       </CardContent>
     </Card>
   )
