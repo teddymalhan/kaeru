@@ -5,6 +5,7 @@ import { QuickActions } from "./components/quick-actions"
 import { TransactionsList } from "./components/transactions-list"
 import { SubscriptionsList } from "./components/subscriptions-list"
 import { Button } from "./components/ui/button"
+import PlaidLink from "./components/PlaidLink"
 
 export default function Home() {
   return (
@@ -45,6 +46,11 @@ export default function Home() {
       <section className="grid gap-6 md:grid-cols-2">
         <AgentStatus />
         <QuickActions />
+      </section>
+
+      {/* Bank Connection */}
+      <section className="motion-safe:animate-fade-up">
+        <PlaidLink />
       </section>
 
       {/* Fraud Alerts */}

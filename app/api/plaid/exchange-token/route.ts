@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Plaid credentials from environment variables
-    const clientId = process.env.PLAID_CLIENT_ID;
-    const secret = process.env.PLAID_SANDBOX; // or PLAID_SECRET for production
+    const clientId = process.env.PLAID_CLIENT_ID || "68e1919bb29c1000263002ec";
+    const secret = process.env.PLAID_SECRET || process.env.PLAID_SANDBOX_SECRET || process.env.PLAID_SANDBOX || "2426d9179d31bc7213942680e161ef";
     const environment = process.env.PLAID_ENVIRONMENT || 'sandbox';
 
     if (!clientId || !secret) {
