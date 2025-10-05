@@ -6,6 +6,7 @@ import { cancelApi } from './functions/cancelApi/resource';
 import { cancelEmail } from './functions/cancelEmail/resource';
 import { cancelViaVapi } from './functions/cancelViaVapi/resource';
 import { disputeViaVapi } from './functions/disputeViaVapi/resource';
+import { ingestTransactions } from './functions/ingestTransactions/resource';
 
 const backend = defineBackend({
   auth,
@@ -15,4 +16,5 @@ const backend = defineBackend({
   cancelEmail,
   cancelViaVapi,
   disputeViaVapi,
+  ingestTransactions,
 });

@@ -1,0 +1,16 @@
+{
+  "name": "ingest-transactions",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@aws-amplify/backend": "^1.5.1",
+    "@aws-sdk/client-dynamodb": "^3.902.0",
+    "@aws-sdk/client-sqs": "^3.901.0",
+    "@aws-sdk/util-dynamodb": "^3.902.0",
+    "plaid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "typescript": "^5.6.2"
+  }
+}

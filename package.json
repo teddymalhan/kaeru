@@ -10,13 +10,22 @@
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.5.5",
+    "@aws-amplify/ui-react-ai": "^1.5.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.901.0",
     "@aws-sdk/client-secrets-manager": "^3.901.0",
     "@aws-sdk/client-sfn": "^3.901.0",
     "@aws-sdk/credential-providers": "^3.901.0",
+    "@langchain/core": "^0.2.0",
+    "@langchain/openai": "^0.1.0",
     "aws-amplify": "^6.6.6",
+    "langchain": "^0.2.0",
     "next": "14.2.10",
+    "plaid": "^13.0.0",
+    "puppeteer": "^24.23.0",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "react-plaid-link": "^4.1.1",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "@aws-amplify/backend": "^1.5.1",
@@ -31,5 +40,11 @@
     "esbuild": "^0.23.1",
     "tsx": "^4.19.0",
     "typescript": "^5.6.2"
+  },
+  "overrides": {
+    "@aws-amplify/plugin-types": {
+      "@aws-sdk/types": "^3.821.0"
+    },
+    "@aws-sdk/types": "^3.821.0"
   }
 }
