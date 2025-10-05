@@ -41,7 +41,7 @@ export function Navbar() {
             </div>
             <div className="hidden flex-col leading-none sm:flex">
               <span className="text-sm font-semibold">Cancel My Stuff</span>
-              <span className="text-xs font-medium text-muted-foreground">AI Account Concierge</span>
+              <span className="text-xs font-medium text-muted-foreground">Account Automation</span>
             </div>
           </Link>
 

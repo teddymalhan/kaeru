@@ -78,7 +78,7 @@ export function SubscriptionsList() {
             {`$${items.filter((s) => !isSubscriptionCancelled(s.id)).reduce((sum, sub) => sum + sub.amount, 0).toFixed(2)}/mo`}
           </div>
         </CardTitle>
-        <p className="text-sm text-muted-foreground">Track recurring spend and proactively cancel stale services.</p>
+        <p className="text-sm text-muted-foreground">View active subscriptions and cancel when needed.</p>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">

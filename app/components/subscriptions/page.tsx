@@ -96,11 +96,11 @@ export default function SubscriptionsPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
                 <Sparkles className="h-4 w-4" />
-                <span>Recurring Revenue Choreography</span>
+                <span>Subscriptions Overview</span>
               </div>
-              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Subscriptions without the sprawl</h1>
+              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Manage your subscriptions</h1>
               <p className="max-w-2xl text-base text-muted-foreground">
-                Capture every renewal, forecast spend, and pause wasteful contracts in one luminous workspace.
+                See upcoming charges, totals by month, and cancel subscriptions you no longer need.
               </p>
             </div>
           </div>
@@ -171,9 +171,7 @@ export default function SubscriptionsPage() {
         <CardHeader className="flex flex-col gap-4 pb-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <CardTitle className="text-lg font-semibold">Subscription Inventory</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Every recurring contract, centralized. Control cadence, pause instantly, or renegotiate with context.
-            </p>
+            <p className="text-sm text-muted-foreground">All subscriptions in one place.</p>
           </div>
           <Button variant="outline" className="rounded-full px-5">
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -223,9 +221,7 @@ export default function SubscriptionsPage() {
                 </div>
 
                 <div className="flex flex-col gap-3 border-t border-border/60 pt-3 md:flex-row md:items-center md:justify-between">
-                  <div className="text-xs text-muted-foreground">
-                    Renewal cadence powered by automation. Notify 3 days prior, escalate if payment fails.
-                  </div>
+                  <div className="text-xs text-muted-foreground">Next steps and details are shown here.</div>
                   <div className="flex items-center gap-2">
                     {outcomes[subscription.id] && !outcomes[subscription.id]?.ok && (
                       <span className="text-destructive text-xs font-semibold">

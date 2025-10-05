@@ -55,11 +55,11 @@ export default async function AgentPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
                 <Sparkles className="h-4 w-4" />
-                <span>AI Agent Performance Studio</span>
+                <span>Agent Activity</span>
               </div>
-              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Call orchestration with concierge energy</h1>
+              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Monitor active and queued calls</h1>
               <p className="max-w-2xl text-base text-muted-foreground">
-                Monitor live calls, queue priorities, and completion velocity with cinematic clarity.
+                See current calls, queue depth, and completion details. Data updates in real time.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -80,7 +80,7 @@ export default async function AgentPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-semibold tracking-tight text-primary">{activeCalls.length}</p>
-                <p className="mt-2 text-xs text-muted-foreground/80">Currently orchestrated by the agent</p>
+                <p className="mt-2 text-xs text-muted-foreground/80">Currently handled by the agent</p>
               </CardContent>
             </Card>
             <Card className="rounded-2xl border-border/50 bg-background/85">

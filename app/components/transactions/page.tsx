@@ -178,12 +178,11 @@ export default function TransactionsPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
                 <Sparkles className="h-4 w-4" />
-                <span>Transaction Intelligence</span>
+                <span>Transactions</span>
               </div>
-              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Every swipe, reconciled beautifully</h1>
+              <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">Review transactions and flags</h1>
               <p className="max-w-2xl text-base text-muted-foreground">
-                Observe spend in real time, silence fraud faster, and export pristine ledgers with a single tap. Your
-                finance cockpit, choreographed for decisive teams.
+                See recent activity, review flagged items, and export a report for your records.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -401,7 +400,7 @@ export default function TransactionsPage() {
             <Card className="rounded-2xl border-border/50 bg-background/85">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Auto-Approved
+                  Cleared
                 </CardTitle>
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
               </CardHeader>
@@ -420,9 +419,7 @@ export default function TransactionsPage() {
         <CardHeader className="flex flex-col gap-4 pb-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <CardTitle className="text-lg font-semibold">Universal Ledger</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Search, filter, and orchestrate follow-ups without ever leaving your cockpit.
-            </p>
+            <p className="text-sm text-muted-foreground">Search and export your transactions.</p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
             <div className="relative w-full">
