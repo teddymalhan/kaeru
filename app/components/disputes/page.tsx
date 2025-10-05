@@ -5,9 +5,19 @@ import { useCallback, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
-import { CheckCircle2, Clock, FileText, Phone, Plus, ShieldAlert, XOctagon } from "lucide-react"
+import { CheckCircle2, Clock, FileText, Phone, Plus, Search, ShieldAlert, XOctagon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
+import { transactions as allTransactions } from "@/app/lib/sample-data"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog"
 
 type AgentIcon = typeof Phone
 
@@ -117,6 +127,9 @@ const formatDate = new Intl.DateTimeFormat("en-US", {
 
 export default function DisputesPage() {
   const [creating, setCreating] = useState(false)
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [createOutcome, setCreateOutcome] = useState<
     | { status: "success" | "error"; httpStatus: number; timestamp: number; payload: unknown | null; error: unknown | null }
     | null
@@ -126,6 +139,7 @@ export default function DisputesPage() {
 
   const handleNewDispute = useCallback(async () => {
     if (creating) return
+    if (!selectedId) return
     setCreating(true)
     setCreateOutcome(null)
     try {
@@ -133,8 +147,9 @@ export default function DisputesPage() {
         endpoint: "/api/actHandler",
         body: {
           action: "dispute",
-          detectionItemId: randomId("dispute"),
+          detectionItemId: selectedId,
           userId: "user456",
+          metadata: (allTransactions.find((t) => t.id === selectedId) ?? null) as unknown,
         },
       })
       setCreateOutcome({
@@ -144,12 +159,13 @@ export default function DisputesPage() {
         payload: result.data,
         error: result.ok ? null : result.error,
       })
+      if (result.ok) setOpen(false)
     } catch (error) {
       setCreateOutcome({ status: "error", httpStatus: 0, timestamp: Date.now(), payload: null, error })
     } finally {
       setCreating(false)
     }
-  }, [creating])
+  }, [creating, selectedId])
   return (
     <div className="space-y-8">
       <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-background via-background to-destructive/10 px-6 py-10 shadow-[var(--shadow-soft)] backdrop-blur-xl transition-surface motion-safe:animate-fade-up sm:px-10">
@@ -174,10 +190,92 @@ export default function DisputesPage() {
                 loop elegantly.
               </p>
             </div>
-            <Button size="lg" className="rounded-full px-6" onClick={handleNewDispute} disabled={creating}>
-              <Plus className="mr-2 h-4 w-4" />
-              {creating ? "Creating…" : "New Dispute"}
-            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="rounded-full px-6">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Dispute
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Select a transaction to dispute</DialogTitle>
+                  <DialogDescription>
+                    Search and choose the specific transaction you want our agent to dispute.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
+                    <input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Search by merchant, amount, category, or ID"
+                      className="h-10 w-full rounded-full border border-border/60 bg-background/70 pl-10 pr-3 text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+                  <div className="max-h-80 overflow-auto rounded-xl border border-border/60">
+                    <div className="divide-y divide-border/60">
+                      {allTransactions
+                        .filter((t) => {
+                          const q = query.trim().toLowerCase()
+                          if (!q) return true
+                          return (
+                            t.merchant.toLowerCase().includes(q) ||
+                            t.category.toLowerCase().includes(q) ||
+                            t.id.toLowerCase().includes(q) ||
+                            String(t.amount).includes(q)
+                          )
+                        })
+                        .slice()
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((t) => {
+                          const isSelected = selectedId === t.id
+                          return (
+                            <button
+                              type="button"
+                              key={t.id}
+                              onClick={() => setSelectedId(t.id)}
+                              className={cn(
+                                "flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-surface",
+                                isSelected
+                                  ? "bg-primary/10 text-primary"
+                                  : "hover:bg-primary/5 text-foreground"
+                              )}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="truncate text-sm font-semibold">{t.merchant}</span>
+                                  {t.status === "flagged" && (
+                                    <span className="rounded-full border border-destructive/40 bg-destructive/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
+                                      Flagged
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground/80">
+                                  {t.category} • {new Date(t.date).toLocaleDateString()} • ID {t.id}
+                                </div>
+                              </div>
+                              <div className="text-right text-sm font-semibold">
+                                ${'{'}t.amount.toFixed(2){'}'}
+                              </div>
+                            </button>
+                          )
+                        })}
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter className="mt-3">
+                  <Button
+                    onClick={handleNewDispute}
+                    disabled={!selectedId || creating}
+                    className="rounded-full px-5"
+                  >
+                    {creating ? "Creating…" : "Create Dispute"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
