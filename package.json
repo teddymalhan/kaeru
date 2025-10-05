@@ -11,6 +11,7 @@
   "dependencies": {
     "@aws-amplify/ui-react": "^6.5.5",
     "@aws-sdk/client-secrets-manager": "^3.901.0",
+    "@aws-sdk/credential-providers": "^3.901.0",
     "aws-amplify": "^6.6.6",
     "next": "14.2.10",
     "react": "^18",
