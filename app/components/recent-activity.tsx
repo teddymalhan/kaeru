@@ -90,7 +90,7 @@ export function RecentActivity() {
             const config = statusConfig[activity.status as keyof typeof statusConfig]
             const Icon = config.icon
 
-            const typeIcon =
+            const TypeIcon =
               activity.type === "dispute" ? AlertTriangle : activity.type === "cancel" ? XCircle : Phone
 
             const tone =
@@ -123,7 +123,7 @@ export function RecentActivity() {
                   <div className="mb-1 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15", tone)}>
-                        <typeIcon className={cn("h-4 w-4")} />
+                        <TypeIcon className={cn("h-4 w-4")} />
                       </span>
                       <p className="text-sm font-medium text-foreground/90">{activity.title}</p>
                       <Badge

@@ -8,6 +8,7 @@ import { Button } from "@/app/components/ui/button"
 import { AlertTriangle } from "lucide-react"
 import { postJson } from "@/app/lib/api-client"
 import { addActivity } from "@/app/lib/activity"
+import { isDisputeFiled, markDisputeFiled } from "@/app/lib/disputes-store"
 
 type Alert = { id: number; merchant: string; amount: string; date: string; confidence: string; reason: string }
 
@@ -20,7 +21,15 @@ export function FraudAlerts() {
       try {
         const res = await fetch("/api/fraud-alerts", { cache: "no-store" })
         const json = await res.json()
-        setAlerts(Array.isArray(json.items) ? json.items : [])
+        const list: Alert[] = Array.isArray(json.items) ? json.items : []
+        setAlerts(list)
+        setOutcomes((prev) => {
+          const next = { ...prev }
+          for (const a of list) {
+            if (isDisputeFiled(a.id)) next[a.id] = { ok: true, status: 200 }
+          }
+          return next
+        })
       } catch {
         setAlerts([])
       }
@@ -40,6 +49,7 @@ export function FraudAlerts() {
         },
       })
       setOutcomes((prev) => ({ ...prev, [alert.id]: { ok: res.ok, status: res.status } }))
+      if (res.ok) markDisputeFiled(alert.id, alert)
       addActivity({
         type: "dispute",
         title: res.ok ? "Dispute created" : "Dispute failed",
@@ -96,26 +106,20 @@ export function FraudAlerts() {
             <div className="flex flex-col items-end gap-2">
               <p className="text-lg font-semibold text-foreground">{alert.amount}</p>
               <div className="flex items-center gap-2">
-                {outcomes[alert.id] && (
-                  <span
-                    className={
-                      outcomes[alert.id]?.ok
-                        ? "text-emerald-500 text-xs font-semibold"
-                        : "text-destructive text-xs font-semibold"
-                    }
-                  >
-                    {outcomes[alert.id]?.ok ? "Filed" : `Error (${outcomes[alert.id]?.status})`}
+                {outcomes[alert.id] && !outcomes[alert.id]?.ok && (
+                  <span className="text-destructive text-xs font-semibold">
+                    {`Error (${outcomes[alert.id]?.status})`}
                   </span>
                 )}
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant={outcomes[alert.id]?.ok ? "outline" : "outline"}
                   className="rounded-full px-4"
                   onClick={() => handleDispute(alert)}
-                  disabled={loadingId === alert.id}
+                  disabled={loadingId === alert.id || !!outcomes[alert.id]?.ok}
                   aria-busy={loadingId === alert.id}
                 >
-                  {loadingId === alert.id ? "Working…" : "Dispute"}
+                  {loadingId === alert.id ? "Working…" : outcomes[alert.id]?.ok ? "Filed" : "Dispute"}
                 </Button>
               </div>
             </div>

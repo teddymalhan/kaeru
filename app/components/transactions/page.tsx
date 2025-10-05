@@ -7,6 +7,9 @@ import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
 import { AlertTriangle, CheckCircle2, Download, Filter, Search, ShieldCheck, Sparkles, Wand2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { postJson } from "@/app/lib/api-client"
+import { addActivity } from "@/app/lib/activity"
+import { isDisputeFiled, markDisputeFiled } from "@/app/lib/disputes-store"
 
 const formatCurrency = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -43,6 +46,8 @@ const riskTone = (score: number) => {
 export default function TransactionsPage() {
   const [items, setItems] = useState<Txn[]>([])
   const [loading, setLoading] = useState(true)
+  const [disputingId, setDisputingId] = useState<string | null>(null)
+  const [disputeOutcomes, setDisputeOutcomes] = useState<Record<string, { ok: boolean; status: number } | undefined>>({})
 
   useEffect(() => {
     let mounted = true
@@ -52,6 +57,12 @@ export default function TransactionsPage() {
         const json = await res.json()
         if (!mounted) return
         setItems(Array.isArray(json.items) ? json.items : [])
+        // initialize dispute outcomes from common store
+        const initial: Record<string, { ok: boolean; status: number }> = {}
+        for (const t of (Array.isArray(json.items) ? json.items : []) as Txn[]) {
+          if (isDisputeFiled(t.id)) initial[t.id] = { ok: true, status: 200 }
+        }
+        setDisputeOutcomes((prev) => ({ ...initial, ...prev }))
       } catch (e) {
         if (!mounted) return
         setItems([])
@@ -60,8 +71,19 @@ export default function TransactionsPage() {
         setLoading(false)
       }
     })()
+    const onDisputes = () => {
+      setDisputeOutcomes((prev) => {
+        const next = { ...prev }
+        for (const t of items) {
+          if (isDisputeFiled(t.id)) next[t.id] = { ok: true, status: 200 }
+        }
+        return next
+      })
+    }
+    window.addEventListener("cms:disputes", onDisputes)
     return () => {
       mounted = false
+      window.removeEventListener("cms:disputes", onDisputes)
     }
   }, [])
 
@@ -71,6 +93,45 @@ export default function TransactionsPage() {
   const highestRisk = useMemo(
     () => (flaggedTransactions.length ? flaggedTransactions.reduce((max, cur) => (cur.fraudScore > max.fraudScore ? cur : max)) : null),
     [flaggedTransactions],
+  )
+
+  const handleDispute = useCallback(
+    async (t: Txn) => {
+      if (disputingId) return
+      setDisputingId(t.id)
+      try {
+        const res = await postJson({
+          endpoint: "/api/actHandler",
+          body: {
+            action: "dispute",
+            detectionItemId: t.id,
+            userId: "user456",
+            metadata: t,
+          },
+        })
+        setDisputeOutcomes((prev) => ({ ...prev, [t.id]: { ok: res.ok, status: res.status } }))
+        if (res.ok) markDisputeFiled(t.id, t)
+        addActivity({
+          type: "dispute",
+          title: res.ok ? "Dispute created" : "Dispute failed",
+          description: `${t.merchant} (${t.id})`,
+          status: res.ok ? "completed" : "error",
+          data: t,
+        })
+      } catch {
+        setDisputeOutcomes((prev) => ({ ...prev, [t.id]: { ok: false, status: 0 } }))
+        addActivity({
+          type: "dispute",
+          title: "Dispute failed",
+          description: `${t.merchant} (${t.id})`,
+          status: "error",
+          data: t,
+        })
+      } finally {
+        setDisputingId(null)
+      }
+    },
+    [disputingId],
   )
   const handleExport = useCallback(() => {
     const headers = ["Transaction ID", "Merchant", "Category", "Date", "Amount", "Status", "Fraud Score"]
@@ -440,11 +501,25 @@ export default function TransactionsPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {isFlagged && (
-                      <Button size="sm" variant="destructive" className="rounded-full px-4">
-                        Escalate
-                      </Button>
+                    {disputeOutcomes[transaction.id] && !disputeOutcomes[transaction.id]?.ok && (
+                      <span className="text-destructive text-xs font-semibold">
+                        {`Error (${disputeOutcomes[transaction.id]?.status})`}
+                      </span>
                     )}
+                    <Button
+                      size="sm"
+                      variant={disputeOutcomes[transaction.id]?.ok ? "outline" : "destructive"}
+                      className="rounded-full px-4"
+                      onClick={() => handleDispute(transaction)}
+                      disabled={disputingId === transaction.id || !!disputeOutcomes[transaction.id]?.ok}
+                      aria-busy={disputingId === transaction.id}
+                    >
+                      {disputingId === transaction.id
+                        ? "Working…"
+                        : disputeOutcomes[transaction.id]?.ok
+                          ? "Filed"
+                          : "Dispute"}
+                    </Button>
                     <Button size="sm" variant="outline" className="rounded-full px-4">
                       View Details
                     </Button>

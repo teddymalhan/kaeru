@@ -8,6 +8,7 @@ import { Phone, XCircle, AlertTriangle, Search } from "lucide-react"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
 import { cn } from "@/lib/utils"
 import { addActivity } from "@/app/lib/activity"
+import { isDisputeFiled, markDisputeFiled } from "@/app/lib/disputes-store"
 import {
   Dialog,
   DialogContent,
@@ -206,6 +207,7 @@ export function QuickActions() {
         setDisputeQuery("")
         setSelectedId(null)
         const selected = txnItems.find((t) => t.id === selectedId)
+        if (selectedId) markDisputeFiled(selectedId, selected)
         addActivity({
           type: "dispute",
           title: "Dispute created",
@@ -305,19 +307,29 @@ export function QuickActions() {
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .map((t) => {
                       const isSelected = selectedId === t.id
+                      const alreadyFiled = isDisputeFiled(t.id)
                       return (
                         <button
                           type="button"
                           key={t.id}
-                          onClick={() => setSelectedId(t.id)}
+                          onClick={() => !alreadyFiled && setSelectedId(t.id)}
                           className={cn(
                             "flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-surface",
-                            isSelected ? "bg-primary/10 text-primary" : "hover:bg-primary/5 text-foreground",
+                            alreadyFiled
+                              ? "bg-muted/40 text-muted-foreground cursor-not-allowed"
+                              : isSelected
+                                ? "bg-primary/10 text-primary"
+                                : "hover:bg-primary/5 text-foreground",
                           )}
                         >
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <span className="truncate text-sm font-semibold">{t.merchant}</span>
+                              {alreadyFiled && (
+                                <span className="rounded-full border border-emerald-400/30 bg-emerald-400/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-300">
+                                  Filed
+                                </span>
+                              )}
                               {t.status === "flagged" && (
                                 <span className="rounded-full border border-destructive/40 bg-destructive/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-destructive">
                                   Flagged
