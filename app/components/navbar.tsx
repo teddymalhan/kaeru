@@ -13,9 +13,11 @@ import {
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
+import { useAuthenticator } from "@aws-amplify/ui-react"
 
 export function Navbar() {
   const pathname = usePathname()
+  const { user } = useAuthenticator((context) => [context.user])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const navLinks = [
@@ -33,9 +35,9 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
-              <span className="text-primary-foreground font-bold">FA</span>
+            X
             </div>
-            <span className="font-semibold text-lg hidden sm:inline">Financial Agent</span>
+            <span className="font-semibold text-lg hidden sm:inline">Cancel My Stuff</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -87,8 +89,7 @@ export function Navbar() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium">John Doe</p>
-                    <p className="text-xs text-muted-foreground">john@example.com</p>
+                    <p className="text-sm font-medium">{user?.signInDetails?.loginId || user?.username || "Guest"}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
