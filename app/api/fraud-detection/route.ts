@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
           await client.models.DetectionItem.update({
             id: detectionItem.id,
             notes: `Fraud Analysis: ${result.output.riskLevel} risk. Risk score: ${result.output.reasoning.split('Risk score: ')[1]?.split('/')[0] || 'unknown'}/100. Indicators: ${result.output.fraudIndicators.join(', ')}`,
-            status: result.output.recommendedAction === 'BLOCK' || result.output.recommendedAction === 'INVESTIGATE' ? 'HIGH_RISK' : 'DETECTED',
+            status: 'DETECTED',
             confidence: result.output.confidenceScore,
           });
         } else {
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
               const detectionItem = await client.models.DetectionItem.create({
                 itemName: transactionData.description,
                 subscriptionType: 'ONE_TIME',
-                status: result.output.riskLevel === 'HIGH' ? 'HIGH_RISK' : 'DETECTED',
+                status: 'DETECTED',
                 detectedAmount: Math.abs(transactionData.amount),
                 confidence: result.output.confidenceScore,
                 transactionId: actualTransactionId,
