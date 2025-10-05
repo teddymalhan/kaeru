@@ -1,8 +1,13 @@
+"use client"
+
+import { useCallback, useState } from "react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
 import { CheckCircle2, Clock, FileText, Phone, Plus, ShieldAlert, XOctagon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { postJson, type ApiResult } from "@/app/lib/api-client"
 
 type AgentIcon = typeof Phone
 
@@ -111,6 +116,40 @@ const formatDate = new Intl.DateTimeFormat("en-US", {
 })
 
 export default function DisputesPage() {
+  const [creating, setCreating] = useState(false)
+  const [createOutcome, setCreateOutcome] = useState<
+    | { status: "success" | "error"; httpStatus: number; timestamp: number; payload: unknown | null; error: unknown | null }
+    | null
+  >(null)
+
+  const randomId = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+
+  const handleNewDispute = useCallback(async () => {
+    if (creating) return
+    setCreating(true)
+    setCreateOutcome(null)
+    try {
+      const result = await postJson({
+        endpoint: "/api/actHandler",
+        body: {
+          action: "dispute",
+          detectionItemId: randomId("dispute"),
+          userId: "user456",
+        },
+      })
+      setCreateOutcome({
+        status: result.ok ? "success" : "error",
+        httpStatus: result.status,
+        timestamp: Date.now(),
+        payload: result.data,
+        error: result.ok ? null : result.error,
+      })
+    } catch (error) {
+      setCreateOutcome({ status: "error", httpStatus: 0, timestamp: Date.now(), payload: null, error })
+    } finally {
+      setCreating(false)
+    }
+  }, [creating])
   return (
     <div className="space-y-8">
       <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-background via-background to-destructive/10 px-6 py-10 shadow-[var(--shadow-soft)] backdrop-blur-xl transition-surface motion-safe:animate-fade-up sm:px-10">
@@ -135,9 +174,9 @@ export default function DisputesPage() {
                 loop elegantly.
               </p>
             </div>
-            <Button size="lg" className="rounded-full px-6">
+            <Button size="lg" className="rounded-full px-6" onClick={handleNewDispute} disabled={creating}>
               <Plus className="mr-2 h-4 w-4" />
-              New Dispute
+              {creating ? "Creating…" : "New Dispute"}
             </Button>
           </div>
 
@@ -189,6 +228,27 @@ export default function DisputesPage() {
           </div>
         </div>
       </section>
+
+      {createOutcome && (
+        <Card className="rounded-2xl border-border/60 bg-background/95">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold">New Dispute Status</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm">
+            {createOutcome.status === "success" ? (
+              <div className="flex items-center justify-between rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-emerald-200">
+                <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Dispute created</span>
+                <span className="opacity-80">HTTP {createOutcome.httpStatus}</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/20 px-4 py-3 text-destructive">
+                <span className="flex items-center gap-2"><XOctagon className="h-4 w-4" /> Failed to create dispute</span>
+                <span className="opacity-80">HTTP {createOutcome.httpStatus}</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="rounded-3xl border-border/60 bg-background/95">
         <CardHeader className="flex flex-col gap-4 pb-6 lg:flex-row lg:items-center lg:justify-between">

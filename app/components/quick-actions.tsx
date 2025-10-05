@@ -64,8 +64,8 @@ export function QuickActions() {
         }),
     },
     {
-      key: "file-dispute",
-      label: "File Dispute",
+      key: "new-dispute",
+      label: "New Dispute",
       icon: AlertTriangle,
       perform: () =>
         postJson({
@@ -100,6 +100,8 @@ export function QuickActions() {
             error: result.ok ? null : result.error,
           },
         }))
+
+        // Keep actions independent; no cross-page navigation
       } catch (error) {
         console.error(`[QuickActions] Action ${action.key} threw`, error)
         setOutcomes((prev) => ({
