@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
       callId: vapiResult.id,
       callStatus: 'initiated',
       outcome: isSuccessful ? 'completed' : 'follow_up_required',
-      phoneNumber: phoneNumber,
+      phoneNumber: targetPhoneNumber,
       assistantId: vapiAssistantId,
       source: 'direct-vapi-api',
       detectionItemStatus: finalStatus,
