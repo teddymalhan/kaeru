@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
@@ -8,6 +8,7 @@ import { Button } from "../ui/button"
 import { CheckCircle2, Clock, FileText, Phone, Plus, Search, ShieldAlert, XOctagon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
+import { addActivity } from "@/app/lib/activity"
 import { transactions as allTransactions } from "@/app/lib/sample-data"
 import {
   Dialog,
@@ -21,69 +22,16 @@ import {
 
 type AgentIcon = typeof Phone
 
-const disputes = [
-  {
-    id: "1",
-    merchant: "Unknown Merchant LLC",
-    amount: 499,
-    date: "2025-10-01",
-    status: "in_progress",
-    type: "Fraud",
-    description: "Unrecognized charge on credit card",
-    agentStatus: "calling",
-    lastUpdate: "Agent on hold with merchant — 15 minute wait time",
-  },
-  {
-    id: "2",
-    merchant: "Suspicious Store XYZ",
-    amount: 1200,
-    date: "2025-09-28",
-    status: "pending",
-    type: "Fraud",
-    description: "Large transaction outside customer region",
-    agentStatus: "queued",
-    lastUpdate: "Awaiting merchant connection window",
-  },
-  {
-    id: "3",
-    merchant: "FitnessPro Gym",
-    amount: 299,
-    date: "2025-09-20",
-    status: "resolved",
-    type: "Cancellation",
-    description: "Charged after membership cancellation",
-    agentStatus: "completed",
-    lastUpdate: "Refund processed — $299.00 credited",
-  },
-  {
-    id: "4",
-    merchant: "TechGadgets Inc",
-    amount: 89.99,
-    date: "2025-09-15",
-    status: "in_progress",
-    type: "Return",
-    description: "Return label generated but refund pending",
-    agentStatus: "calling",
-    lastUpdate: "Escalated to level two supervisor",
-  },
-  {
-    id: "5",
-    merchant: "StreamMax",
-    amount: 24.99,
-    date: "2025-09-10",
-    status: "rejected",
-    type: "Billing Error",
-    description: "Double charged for subscription",
-    agentStatus: "completed",
-    lastUpdate: "Merchant declined claim — schedule follow-up",
-  },
-]
-
-const stats = {
-  total: disputes.length,
-  inProgress: disputes.filter((dispute) => dispute.status === "in_progress").length,
-  resolved: disputes.filter((dispute) => dispute.status === "resolved").length,
-  pending: disputes.filter((dispute) => dispute.status === "pending").length,
+type Dispute = {
+  id: string
+  merchant: string
+  amount: number
+  date: string
+  status: string
+  type: string
+  description: string
+  agentStatus: string
+  lastUpdate: string
 }
 
 const statusStyles: Record<string, string> = {
@@ -130,12 +78,45 @@ export default function DisputesPage() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [items, setItems] = useState<Dispute[]>([])
+  const [loading, setLoading] = useState(true)
   const [createOutcome, setCreateOutcome] = useState<
     | { status: "success" | "error"; httpStatus: number; timestamp: number; payload: unknown | null; error: unknown | null }
     | null
   >(null)
 
   const randomId = (prefix: string) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const res = await fetch("/api/disputes", { cache: "no-store" })
+        const json = await res.json()
+        if (!mounted) return
+        setItems(Array.isArray(json.items) ? json.items : [])
+      } catch {
+        if (!mounted) return
+        setItems([])
+      } finally {
+        if (!mounted) return
+        setLoading(false)
+      }
+    })()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const stats = useMemo(
+    () => ({
+      total: items.length,
+      inProgress: items.filter((d) => d.status === "in_progress").length,
+      resolved: items.filter((d) => d.status === "resolved").length,
+      pending: items.filter((d) => d.status === "pending").length,
+    }),
+    [items],
+  )
 
   const handleNewDispute = useCallback(async () => {
     if (creating) return
@@ -160,8 +141,26 @@ export default function DisputesPage() {
         error: result.ok ? null : result.error,
       })
       if (result.ok) setOpen(false)
+      if (result.ok) {
+        const t = allTransactions.find((x) => x.id === selectedId)
+        addActivity({
+          type: "dispute",
+          title: "Dispute created",
+          description: t
+            ? `Opened dispute for ${t.merchant} (${t.id})`
+            : `Opened dispute for transaction ${selectedId}`,
+          status: "completed",
+          data: t ?? { id: selectedId },
+        })
+      }
     } catch (error) {
       setCreateOutcome({ status: "error", httpStatus: 0, timestamp: Date.now(), payload: null, error })
+      addActivity({
+        type: "dispute",
+        title: "Dispute failed",
+        description: selectedId ? `Could not create dispute for ${selectedId}` : "No transaction selected",
+        status: "error",
+      })
     } finally {
       setCreating(false)
     }
@@ -362,7 +361,7 @@ export default function DisputesPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-3">
-          {disputes.map((dispute) => {
+          {(loading ? [] : items).map((dispute) => {
             const agentState = agentStatusCopy[dispute.agentStatus] ?? agentStatusCopy.completed
             const StatusIcon = agentState.icon
 

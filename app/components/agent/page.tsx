@@ -13,62 +13,7 @@ import {
   XCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-const activeCalls = [
-  {
-    id: "1",
-    merchant: "Unknown Merchant LLC",
-    type: "Fraud Dispute",
-    status: "on_hold",
-    duration: "15:32",
-    waitTime: "12 min",
-    priority: "high",
-  },
-  {
-    id: "2",
-    merchant: "TechGadgets Inc",
-    type: "Return Processing",
-    status: "speaking",
-    duration: "08:45",
-    waitTime: "0 min",
-    priority: "medium",
-  },
-]
-
-const queuedTasks = [
-  {
-    id: "3",
-    merchant: "Suspicious Store XYZ",
-    type: "Fraud Dispute",
-    priority: "high",
-    estimatedWait: "5 min",
-  },
-  {
-    id: "4",
-    merchant: "StreamMax",
-    type: "Subscription Cancel",
-    priority: "medium",
-    estimatedWait: "15 min",
-  },
-  {
-    id: "5",
-    merchant: "FitnessPro",
-    type: "Billing Dispute",
-    priority: "low",
-    estimatedWait: "25 min",
-  },
-]
-
-const completedToday = [
-  { id: "6", merchant: "FitnessPro Gym", type: "Cancellation", result: "success", duration: "12:30", amount: 299 },
-  { id: "7", merchant: "Cable Company", type: "Password Reset", result: "success", duration: "18:45", amount: 0 },
-  { id: "8", merchant: "Insurance Co", type: "Claim Dispute", result: "failed", duration: "25:12", amount: 450 },
-  { id: "9", merchant: "Phone Provider", type: "Bill Dispute", result: "success", duration: "15:20", amount: 85 },
-]
-
-const successRate = Math.round(
-  (completedToday.filter((task) => task.result === "success").length / completedToday.length) * 100,
-)
+import { headers } from "next/headers"
 
 const priorityTone: Record<string, string> = {
   high: "border-destructive/40 bg-destructive/20 text-destructive",
@@ -76,7 +21,24 @@ const priorityTone: Record<string, string> = {
   low: "border-primary/30 bg-primary/10 text-primary",
 }
 
-export default function AgentPage() {
+type AgentData = {
+  activeCalls: Array<{ id: string; merchant: string; type: string; status: string; duration: string; waitTime: string; priority: string }>
+  queuedTasks: Array<{ id: string; merchant: string; type: string; priority: string; estimatedWait: string }>
+  completedToday: Array<{ id: string; merchant: string; type: string; result: string; duration: string; amount: number }>
+  successRate: number
+}
+
+async function getAgentData(): Promise<AgentData> {
+  const h = headers()
+  const host = h.get("x-forwarded-host") ?? h.get("host")
+  const proto = h.get("x-forwarded-proto") ?? "http"
+  const base = process.env.NEXT_PUBLIC_BASE_URL || (host ? `${proto}://${host}` : "http://localhost:3000")
+  const res = await fetch(`${base}/api/agent`, { cache: "no-store" })
+  return res.json()
+}
+
+export default async function AgentPage() {
+  const { activeCalls, queuedTasks, completedToday, successRate } = await getAgentData()
   return (
     <div className="space-y-8">
       <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-background via-background to-primary/10 px-6 py-10 shadow-[var(--shadow-soft)] backdrop-blur-xl transition-surface motion-safe:animate-fade-up sm:px-10">

@@ -1,12 +1,13 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card"
 import { Button } from "@/app/components/ui/button"
 import type { LucideIcon } from "lucide-react"
 import { Phone, XCircle, AlertTriangle, Search } from "lucide-react"
 import { postJson, type ApiResult } from "@/app/lib/api-client"
 import { cn } from "@/lib/utils"
+import { addActivity } from "@/app/lib/activity"
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/app/components/ui/dialog"
-import { transactions as allTransactions } from "@/app/lib/sample-data"
 
 type QuickAction = {
   key: string
@@ -41,6 +41,21 @@ export function QuickActions() {
   const [disputeQuery, setDisputeQuery] = useState("")
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [creatingDispute, setCreatingDispute] = useState(false)
+  const [txnItems, setTxnItems] = useState<any[]>([])
+
+  // Load transactions for the selector
+  useEffect(() => {
+    if (!disputeOpen) return
+    ;(async () => {
+      try {
+        const res = await fetch("/api/transactions", { cache: "no-store" })
+        const json = await res.json()
+        setTxnItems(Array.isArray(json.items) ? json.items : [])
+      } catch {
+        setTxnItems([])
+      }
+    })()
+  }, [disputeOpen])
 
   const actions: QuickAction[] = [
     {
@@ -120,7 +135,24 @@ export function QuickActions() {
           },
         }))
 
-        // Keep actions independent; no cross-page navigation
+        // Log to recent activity for successful operations
+        if (result.ok) {
+          if (action.key === "make-call") {
+            addActivity({
+              type: "call",
+              title: "Initiated cancellation call",
+              description: "Agent placed an outbound call",
+              status: "in-progress",
+            })
+          } else if (action.key === "cancel-service") {
+            addActivity({
+              type: "cancel",
+              title: "Service cancellation requested",
+              description: "Submitted cancellation to provider",
+              status: "completed",
+            })
+          }
+        }
       } catch (error) {
         console.error(`[QuickActions] Action ${action.key} threw`, error)
         setOutcomes((prev) => ({
@@ -133,6 +165,12 @@ export function QuickActions() {
             error,
           },
         }))
+        addActivity({
+          type: action.key,
+          title: "Action failed",
+          description: `The ${action.label} action encountered an error`,
+          status: "error",
+        })
       } finally {
         setLoadingAction(null)
       }
@@ -150,7 +188,7 @@ export function QuickActions() {
           action: "dispute",
           detectionItemId: selectedId,
           userId: "user456",
-          metadata: (allTransactions.find((t) => t.id === selectedId) ?? null) as unknown,
+          metadata: (txnItems.find((t) => t.id === selectedId) ?? null) as unknown,
         },
       })
       setOutcomes((prev) => ({
@@ -167,6 +205,16 @@ export function QuickActions() {
         setDisputeOpen(false)
         setDisputeQuery("")
         setSelectedId(null)
+        const selected = txnItems.find((t) => t.id === selectedId)
+        addActivity({
+          type: "dispute",
+          title: "Dispute created",
+          description: selected
+            ? `Opened dispute for ${selected.merchant} (${selected.id})`
+            : `Opened dispute for transaction ${selectedId}`,
+          status: "completed",
+          data: selected ?? { id: selectedId },
+        })
       }
     } catch (error) {
       setOutcomes((prev) => ({
@@ -179,6 +227,12 @@ export function QuickActions() {
           error,
         },
       }))
+      addActivity({
+        type: "dispute",
+        title: "Dispute failed",
+        description: selectedId ? `Could not create dispute for ${selectedId}` : "No transaction selected",
+        status: "error",
+      })
     } finally {
       setCreatingDispute(false)
     }
@@ -236,7 +290,7 @@ export function QuickActions() {
               </div>
               <div className="max-h-80 overflow-auto rounded-xl border border-border/60">
                 <div className="divide-y divide-border/60">
-                  {allTransactions
+                  {txnItems
                     .filter((t) => {
                       const q = disputeQuery.trim().toLowerCase()
                       if (!q) return true

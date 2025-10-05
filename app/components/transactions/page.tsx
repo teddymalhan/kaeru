@@ -1,13 +1,12 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
 import { AlertTriangle, CheckCircle2, Download, Filter, Search, ShieldCheck, Sparkles, Wand2 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { transactions } from "@/app/lib/sample-data"
 
 const formatCurrency = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -21,13 +20,15 @@ const formatDate = new Intl.DateTimeFormat("en-US", {
 })
 
 
-const flaggedTransactions = transactions.filter((transaction) => transaction.status === "flagged")
-const totalVolume = transactions.reduce((acc, transaction) => acc + transaction.amount, 0)
-const averageTicket = totalVolume / transactions.length
-const highestRisk = flaggedTransactions.reduce(
-  (max, current) => (current && max && current.fraudScore > max.fraudScore ? current : max),
-  flaggedTransactions[0],
-)
+type Txn = {
+  id: string
+  merchant: string
+  amount: number
+  date: string
+  status: string
+  category: string
+  fraudScore: number
+}
 
 const riskTone = (score: number) => {
   if (score >= 80) {
@@ -40,9 +41,40 @@ const riskTone = (score: number) => {
 }
 
 export default function TransactionsPage() {
+  const [items, setItems] = useState<Txn[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const res = await fetch("/api/transactions", { cache: "no-store" })
+        const json = await res.json()
+        if (!mounted) return
+        setItems(Array.isArray(json.items) ? json.items : [])
+      } catch (e) {
+        if (!mounted) return
+        setItems([])
+      } finally {
+        if (!mounted) return
+        setLoading(false)
+      }
+    })()
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const flaggedTransactions = useMemo(() => items.filter((t) => t.status === "flagged"), [items])
+  const totalVolume = useMemo(() => items.reduce((acc, t) => acc + t.amount, 0), [items])
+  const averageTicket = useMemo(() => (items.length ? totalVolume / items.length : 0), [items, totalVolume])
+  const highestRisk = useMemo(
+    () => (flaggedTransactions.length ? flaggedTransactions.reduce((max, cur) => (cur.fraudScore > max.fraudScore ? cur : max)) : null),
+    [flaggedTransactions],
+  )
   const handleExport = useCallback(() => {
     const headers = ["Transaction ID", "Merchant", "Category", "Date", "Amount", "Status", "Fraud Score"]
-    const rows = transactions.map((transaction) => [
+    const rows = items.map((transaction) => [
       transaction.id,
       transaction.merchant,
       transaction.category,
@@ -67,7 +99,7 @@ export default function TransactionsPage() {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-  }, [])
+  }, [items])
 
   return (
     <div className="space-y-8">
@@ -113,7 +145,7 @@ export default function TransactionsPage() {
                     minute: "2-digit",
                   })
 
-                  const topMerchants = [...transactions]
+                  const topMerchants = [...items]
                     .reduce<Record<string, number>>((acc, t) => {
                       acc[t.merchant] = (acc[t.merchant] ?? 0) + t.amount
                       return acc
@@ -129,7 +161,7 @@ export default function TransactionsPage() {
                     `)
                     .join("")
 
-                  const txnRows = transactions
+                  const txnRows = items
                     .map(
                       (t) => `
                         <tr>
@@ -211,8 +243,8 @@ export default function TransactionsPage() {
                             <table>
                               <tbody>
                                 <tr><td>Highest Fraud Score</td><td style="text-align:right">${flaggedTransactions.length ? Math.max(...flaggedTransactions.map(t => t.fraudScore)) : 0}%</td></tr>
-                                <tr><td>Auto-Approved</td><td style="text-align:right">${transactions.length - flaggedTransactions.length}</td></tr>
-                                <tr><td>Flag Rate</td><td style="text-align:right">${((flaggedTransactions.length / transactions.length) * 100).toFixed(1)}%</td></tr>
+                                <tr><td>Auto-Approved</td><td style="text-align:right">${items.length - flaggedTransactions.length}</td></tr>
+                                <tr><td>Flag Rate</td><td style="text-align:right">${((flaggedTransactions.length / items.length) * 100).toFixed(1)}%</td></tr>
                               </tbody>
                             </table>
                           </div>
@@ -273,7 +305,7 @@ export default function TransactionsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-semibold tracking-tight">{formatCurrency.format(totalVolume)}</p>
-                <p className="mt-2 text-xs text-muted-foreground/80">10 transactions processed in the last 7 days</p>
+                <p className="mt-2 text-xs text-muted-foreground/80">{items.length} transactions processed in the last 7 days</p>
               </CardContent>
             </Card>
 
@@ -314,7 +346,7 @@ export default function TransactionsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-semibold tracking-tight">
-                  {transactions.length - flaggedTransactions.length}
+                  {items.length - flaggedTransactions.length}
                 </p>
                 <p className="mt-2 text-xs text-muted-foreground/80">Cleared instantly by the AI auditor</p>
               </CardContent>
@@ -350,7 +382,7 @@ export default function TransactionsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {transactions.map((transaction) => {
+          {(loading ? [] : items).map((transaction) => {
             const isFlagged = transaction.status === "flagged"
 
             return (
