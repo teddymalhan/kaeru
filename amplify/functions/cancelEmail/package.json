@@ -1,0 +1,12 @@
+{
+  "name": "cancel-email",
+  "version": "1.0.0",
+  "description": "Email-based subscription cancellation Lambda function",
+  "main": "index.ts",
+  "type": "module",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.0",
+    "@types/node": "^18.0.0"
+  }
+}
