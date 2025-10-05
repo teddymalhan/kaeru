@@ -33,5 +33,11 @@
     "esbuild": "^0.23.1",
     "tsx": "^4.19.0",
     "typescript": "^5.6.2"
+  },
+  "overrides": {
+    "@aws-amplify/plugin-types": {
+      "@aws-sdk/types": "^3.821.0"
+    },
+    "@aws-sdk/types": "^3.821.0"
   }
 }

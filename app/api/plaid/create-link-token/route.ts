@@ -61,9 +61,6 @@ export async function POST(request: NextRequest) {
       language: 'en',
       // Include webhook URL for transaction updates
       webhook: webhookUrl,
-      transactions: {
-        days_requested: 90, // Get 90 days of historical data
-      },
     };
 
     console.log(`Creating Link token for user: ${userId}`);

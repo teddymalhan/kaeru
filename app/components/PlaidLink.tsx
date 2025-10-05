@@ -124,7 +124,7 @@ export default function PlaidLink({ onSuccess, onExit, onEvent }: PlaidLinkProps
         
         <button
           onClick={handleConnect}
-          disabled={loading || (!ready && linkToken)}
+          disabled={loading || (!ready && !!linkToken)}
           style={{
             padding: '0.75rem 1.5rem',
             backgroundColor: loading ? '#6c757d' : '#28a745',

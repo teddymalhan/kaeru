@@ -26,9 +26,6 @@ const createLinkTokenWithWebhook = async (userId: string) => {
     language: 'en',
     // 🚨 CRITICAL: Include your webhook URL here
     webhook: 'https://qxqc52wktm74c2fod3trdrhzaq0ztpym.lambda-url.us-east-1.on.aws/',
-    transactions: {
-      days_requested: 90, // Get 90 days of historical data
-    },
   };
 
   try {
