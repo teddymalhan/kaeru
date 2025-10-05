@@ -1,3 +1,7 @@
+"use client"
+
+import { useCallback } from "react"
+
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
@@ -127,6 +131,35 @@ const riskTone = (score: number) => {
 }
 
 export default function TransactionsPage() {
+  const handleExport = useCallback(() => {
+    const headers = ["Transaction ID", "Merchant", "Category", "Date", "Amount", "Status", "Fraud Score"]
+    const rows = transactions.map((transaction) => [
+      transaction.id,
+      transaction.merchant,
+      transaction.category,
+      formatDate.format(new Date(transaction.date)),
+      transaction.amount.toFixed(2),
+      transaction.status,
+      `${transaction.fraudScore}%`,
+    ])
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(","))
+      .join("\n")
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    const timestamp = new Date().toISOString().split("T")[0]
+
+    link.href = url
+    link.setAttribute("download", `cms-transactions-${timestamp}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }, [])
+
   return (
     <div className="space-y-8">
       <section className="relative overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-background via-background to-primary/10 px-6 py-10 shadow-[var(--shadow-soft)] backdrop-blur-xl transition-surface motion-safe:animate-fade-up sm:px-10">
@@ -152,11 +185,170 @@ export default function TransactionsPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <Button size="lg" className="rounded-full px-6">
+              <Button size="lg" className="rounded-full px-6" onClick={handleExport}>
                 <Download className="mr-2 h-4 w-4" />
                 Export Ledger
               </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-6">
+              <Button
+                variant="outline"
+                size="lg"
+                className="rounded-full px-6"
+                onClick={() => {
+                  const title = "Cancel My Stuff — Transaction Report"
+                  const today = new Date()
+                  const formattedDate = today.toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+
+                  const topMerchants = [...transactions]
+                    .reduce<Record<string, number>>((acc, t) => {
+                      acc[t.merchant] = (acc[t.merchant] ?? 0) + t.amount
+                      return acc
+                    }, {})
+                  const merchantRows = Object.entries(topMerchants)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(([name, amt]) => `
+                      <tr>
+                        <td>${name}</td>
+                        <td style="text-align:right">${formatCurrency.format(amt)}</td>
+                      </tr>
+                    `)
+                    .join("")
+
+                  const txnRows = transactions
+                    .map(
+                      (t) => `
+                        <tr>
+                          <td>${t.id}</td>
+                          <td>${t.merchant}</td>
+                          <td>${t.category}</td>
+                          <td>${formatDate.format(new Date(t.date))}</td>
+                          <td style="text-align:right">${formatCurrency.format(t.amount)}</td>
+                          <td>${t.status}</td>
+                          <td>${t.fraudScore}%</td>
+                        </tr>
+                      `,
+                    )
+                    .join("")
+
+                  const html = `<!doctype html>
+                    <html>
+                      <head>
+                        <meta charset="utf-8" />
+                        <meta name="viewport" content="width=device-width, initial-scale=1" />
+                        <title>${title}</title>
+                        <style>
+                          :root {
+                            --ink: #0a0c10;
+                            --muted: #5b6472;
+                            --border: #e5e7eb;
+                            --primary: #5a66ff;
+                          }
+                          @page { margin: 24mm; }
+                          * { box-sizing: border-box; }
+                          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif; color: var(--ink); }
+                          .header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; }
+                          .brand { display:flex; align-items:center; gap:12px; }
+                          .logo { width:28px; height:28px; border-radius:10px; background: linear-gradient(135deg, var(--primary) 0%, #9aa2ff 100%); color:white; display:grid; place-items:center; font-weight:700; }
+                          h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+                          .muted { color: var(--muted); font-size: 12px; }
+                          .kpis { display:grid; grid-template-columns: repeat(3, 1fr); gap:12px; margin: 18px 0 10px; }
+                          .kpi { border:1px solid var(--border); border-radius:12px; padding:12px; }
+                          .kpi .label { font-size:11px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; }
+                          .kpi .value { font-size:18px; font-weight:700; margin-top:6px; }
+                          h2 { font-size: 14px; margin: 18px 0 8px; letter-spacing: .02em; }
+                          table { width:100%; border-collapse: collapse; }
+                          th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+                          th { text-align: left; font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: .08em; }
+                          .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+                          .card { border:1px solid var(--border); border-radius: 12px; padding: 14px; }
+                          footer { margin-top: 18px; font-size: 11px; color: var(--muted); display:flex; justify-content:space-between; }
+                        </style>
+                      </head>
+                      <body>
+                        <div class="header">
+                          <div class="brand">
+                            <div class="logo">CMS</div>
+                            <div>
+                              <h1>Transaction Report</h1>
+                              <div class="muted">Generated ${formattedDate}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="kpis">
+                          <div class="kpi"><div class="label">Total Volume</div><div class="value">${formatCurrency.format(totalVolume)}</div></div>
+                          <div class="kpi"><div class="label">Flagged Cases</div><div class="value">${flaggedTransactions.length}</div></div>
+                          <div class="kpi"><div class="label">Avg Ticket</div><div class="value">${formatCurrency.format(averageTicket)}</div></div>
+                        </div>
+
+                        <div class="grid">
+                          <div class="card">
+                            <h2>Top Merchants</h2>
+                            <table>
+                              <thead>
+                                <tr><th>Merchant</th><th style="text-align:right">Amount</th></tr>
+                              </thead>
+                              <tbody>${merchantRows}</tbody>
+                            </table>
+                          </div>
+                          <div class="card">
+                            <h2>Risk Overview</h2>
+                            <table>
+                              <tbody>
+                                <tr><td>Highest Fraud Score</td><td style="text-align:right">${flaggedTransactions.length ? Math.max(...flaggedTransactions.map(t => t.fraudScore)) : 0}%</td></tr>
+                                <tr><td>Auto-Approved</td><td style="text-align:right">${transactions.length - flaggedTransactions.length}</td></tr>
+                                <tr><td>Flag Rate</td><td style="text-align:right">${((flaggedTransactions.length / transactions.length) * 100).toFixed(1)}%</td></tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        <div class="card" style="margin-top:16px;">
+                          <h2>Ledger Detail</h2>
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>ID</th>
+                                <th>Merchant</th>
+                                <th>Category</th>
+                                <th>Date</th>
+                                <th style="text-align:right">Amount</th>
+                                <th>Status</th>
+                                <th>Fraud</th>
+                              </tr>
+                            </thead>
+                            <tbody>${txnRows}</tbody>
+                          </table>
+                        </div>
+
+                        <footer>
+                          <span>Cancel My Stuff</span>
+                          <span>Confidential · ${today.getFullYear()}</span>
+                        </footer>
+                        <script>
+                          window.addEventListener('load', () => {
+                            setTimeout(() => { window.print(); }, 150);
+                          });
+                        </script>
+                      </body>
+                    </html>`
+
+                  const report = window.open("", "_blank")
+                  if (!report) {
+                    alert("Please allow pop-ups to generate the PDF report.")
+                    return
+                  }
+                  report.document.open()
+                  report.document.write(html)
+                  report.document.close()
+                }}
+              >
                 Create Report
               </Button>
             </div>
