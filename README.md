@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-<strong>Return, rest帰るore, and reclaim your finances with AI-powered automation</strong>
+<strong>Return, restore, and reclaim your finances with AI-powered automation</strong>
 </p>
 
 # Kaeru
