@@ -1,5 +1,5 @@
 <p align="center">
-<img src="public/kaeru-icon.svg" alt="Kaeru - Return, restore, and reclaim your finances">
+<img width="128" height="128" src="public/kaeru-icon.svg" alt="Kaeru - Return, restore, and reclaim your finances">
 </p>
 
 <p align="center">
