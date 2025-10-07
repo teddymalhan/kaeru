@@ -6,12 +6,27 @@
 <strong>Return, restore, and reclaim your finances with AI-powered automation</strong>
 </p>
 
+<p align="center">
+<a href="#features">Features</a> |
+<a href="#quick-start">Quick Start</a> |
+<a href="#documentation">Documentation</a>
+</p>
+
+---
+
 # Kaeru
 > 帰る (kaeru) - to return, go back, or restore
 
-An AI-powered financial operations platform for managing cancellations, disputes, and customer outreach.
+An AI-powered financial operations platform that automates cancellations, disputes, and customer outreach.
 
-Streamline your financial workflows with intelligent automation, real-time fraud detection, and comprehensive transaction management from a single dashboard.
+- Automate subscription cancellations across multiple providers
+- Detect and dispute fraudulent transactions in real-time
+- Manage all financial operations from a single dashboard
+- AI agents handle phone calls and email workflows
+
+It's a smarter, more efficient way to manage your financial life.
+
+Visit the [documentation](#documentation) for detailed setup guides and API references.
 
 ## Features
 
@@ -41,51 +56,26 @@ npm run dev
 
 Visit `http://localhost:3000` to access the dashboard.
 
-## Core Workflows
+## How It Works
 
 ### Cancellation Management
-- **API-based Cancellations**: Direct integration with service providers
-- **Phone Call Automation**: AI agents handle outbound cancellation calls
-- **Email Workflows**: Automated cancellation requests via email
+- **Smart Cancellations**: Automatically cancel subscriptions across multiple providers
+- **Phone Call Automation**: AI agents make cancellation calls for you
+- **Email Workflows**: Automated cancellation requests sent via email
 
 ### Dispute Resolution
-- **Transaction Disputes**: File disputes directly from transaction history
-- **Fraud Alerts**: Automated detection and dispute filing for suspicious activity
-- **Status Tracking**: Monitor dispute progress and outcomes
+- **One-Click Disputes**: File disputes directly from your transaction history
+- **Fraud Protection**: Automatic detection and dispute filing for suspicious charges
+- **Progress Tracking**: Monitor your dispute status and outcomes
 
 ### Fraud Detection
-- **Real-time Monitoring**: AI-powered analysis of transaction patterns
-- **Risk Scoring**: Adaptive scoring system for transaction risk assessment
-- **Alert Management**: Immediate notifications for suspicious activities
-
-## API Endpoints
-
-The platform provides several key API endpoints:
-
-- `/api/actHandler` - Main workflow orchestration for cancellations and disputes
-- `/api/cancelApi` - Direct API-based subscription cancellations
-- `/api/cancelEmail` - Email-based cancellation workflows
-- `/api/fraud-detection` - Fraud detection and risk assessment
-- `/api/transactions` - Transaction data and management
-- `/api/subscriptions` - Subscription tracking and management
-
-## Architecture
-
-Built with modern web technologies:
-
-- **Frontend**: Next.js 14 with App Router, React 18, TypeScript
-- **UI Components**: Radix UI primitives with Tailwind CSS
-- **Backend**: AWS Amplify with serverless functions
-- **Authentication**: AWS Cognito integration
-- **Database**: DynamoDB for real-time data storage
-- **State Management**: React hooks with local storage persistence
+- **Real-time Monitoring**: AI watches your transactions 24/7
+- **Smart Alerts**: Get notified immediately about suspicious activity
+- **Risk Assessment**: Advanced scoring to identify potential fraud
 
 ## Installation
 
-### Prerequisites
-- Node.js 18.17+ (up to 20.x)
-- npm or yarn package manager
-- AWS CLI (for Amplify features)
+Kaeru requires Node.js 18.17+ and npm or yarn.
 
 ### Development Setup
 
@@ -116,93 +106,35 @@ Built with modern web technologies:
    npx ampx sandbox
    ```
 
-## Usage Examples
+## What You Get
 
-### Quick Actions
-```typescript
-// Launch a cancellation workflow
-const result = await fetch('/api/actHandler', {
-  method: 'POST',
-  body: JSON.stringify({
-    action: 'cancel',
-    detectionItemId: 'sub-123',
-    userId: 'user456'
-  })
-});
-
-// File a dispute
-const dispute = await fetch('/api/actHandler', {
-  method: 'POST',
-  body: JSON.stringify({
-    action: 'dispute',
-    detectionItemId: 'txn-789',
-    userId: 'user456',
-    metadata: transactionData
-  })
-});
-```
-
-### Transaction Management
-```typescript
-// Get transaction history
-const transactions = await fetch('/api/transactions');
-const data = await transactions.json();
-
-// Export transaction data
-const exportData = transactions.map(t => ({
-  id: t.id,
-  merchant: t.merchant,
-  amount: t.amount,
-  date: t.date,
-  status: t.status
-}));
-```
-
-## Security Features
-
-- **Fraud Detection**: AI-powered transaction monitoring
-- **Risk Assessment**: Multi-factor risk scoring system
-- **Secure Authentication**: AWS Cognito integration
-- **Data Encryption**: End-to-end encryption for sensitive data
-- **Audit Logging**: Complete activity tracking and logging
-
-## Performance
-
-- **Real-time Updates**: Live status monitoring and activity feeds
-- **Optimized Rendering**: React 18 with concurrent features
-- **Efficient Data Loading**: Server-side rendering with client-side hydration
-- **Responsive Design**: Mobile-first approach with adaptive layouts
+- **Dashboard**: Clean, intuitive interface to manage all your financial operations
+- **Transaction History**: Complete view of all your financial activities
+- **Smart Alerts**: Get notified about suspicious charges and subscription renewals
+- **Export Data**: Download your transaction history and reports
+- **Mobile Friendly**: Works great on your phone, tablet, or computer
 
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Documentation
+
+For detailed setup guides and API references, check the `/docs` directory:
+
+- [`PLAID_SETUP.md`](docs/PLAID_SETUP.md) - Plaid integration setup
+- [`FRAUD_DETECTION_README.md`](docs/FRAUD_DETECTION_README.md) - Fraud detection system
+- [`AI_FRAUD_DETECTION_SETUP.md`](docs/AI_FRAUD_DETECTION_SETUP.md) - AI setup guide
+- [`vapi-assistants.md`](docs/vapi-assistants.md) - VAPI assistant configuration
+
 ## Support
 
-- **Documentation**: Check the `/docs` directory for detailed guides
 - **Issues**: Report bugs and request features via GitHub Issues
 - **Discussions**: Join community discussions in GitHub Discussions
 
-## Roadmap
-
-- [ ] Enhanced AI agent capabilities
-- [ ] Multi-provider integration expansion
-- [ ] Advanced analytics and reporting
-- [ ] Mobile application
-- [ ] API rate limiting and optimization
-- [ ] Enhanced fraud detection algorithms
 
 ---
-
-**Kaeru** - Streamline your financial operations with AI-powered automation.

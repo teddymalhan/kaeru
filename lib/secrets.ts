@@ -9,7 +9,7 @@ import { fromIni } from "@aws-sdk/credential-providers"; // <--- make sure you i
 
 // Use your local profile when AWS env vars aren't set
 const region = process.env.AWS_REGION || "us-east-2";
-const profile = process.env.AWS_PROFILE || "arunPdl02";
+const profile = process.env.AWS_PROFILE || "dummy_aws_profile";
 
 const sm = new SecretsManagerClient({
   region,

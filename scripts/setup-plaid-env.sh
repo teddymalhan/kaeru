@@ -8,12 +8,13 @@ echo "Setting up Plaid environment variables..."
 # Create .env.local file
 cat > .env.local << EOF
 # Plaid Configuration
-PLAID_CLIENT_ID=68e1919bb29c1000263002ec
-PLAID_SANDBOX=2426d9179d31bc7213942680e161ef
+PLAID_CLIENT_ID=dummy_plaid_client_id
+PLAID_SANDBOX=dummy_plaid_secret
 PLAID_ENVIRONMENT=sandbox
 
-# Note: These are your actual Plaid sandbox credentials
-# Make sure to keep this file secure and don't commit it to version control
+# Note: These are dummy Plaid credentials for development
+# Replace with your actual Plaid sandbox credentials from https://dashboard.plaid.com/team/keys
+# Make sure to keep actual credentials secure and don't commit them to version control
 EOF
 
 echo "✅ Created .env.local file with Plaid credentials"
