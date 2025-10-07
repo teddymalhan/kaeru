@@ -1,0 +1,36 @@
+<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Modern SaaS style background with vibrant gradient -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366F1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Subtle glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Rounded rectangle background (iOS style) -->
+  <rect width="1024" height="1024" rx="226" ry="226" fill="url(#bg-gradient)"/>
+  
+  <!-- Decorative circle elements for modern look -->
+  <circle cx="180" cy="180" r="120" fill="white" opacity="0.1"/>
+  <circle cx="880" cy="850" r="150" fill="white" opacity="0.08"/>
+  
+  <!-- Japanese text "帰る" with modern styling -->
+  <text x="512" y="620" 
+        font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Hiragino Sans, sans-serif" 
+        font-size="380" 
+        font-weight="700"
+        fill="white" 
+        text-anchor="middle"
+        letter-spacing="-10"
+        filter="url(#glow)">帰る</text>
+</svg>

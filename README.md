@@ -1,3 +1,11 @@
+<p align="center">
+<img src="public/kaeru-icon.svg" alt="Kaeru - Return, restore, and reclaim your finances">
+</p>
+
+<p align="center">
+<strong>Return, rest帰るore, and reclaim your finances with AI-powered automation</strong>
+</p>
+
 # Kaeru
 > 帰る (kaeru) - to return, go back, or restore
 
